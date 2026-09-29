@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/ui'],
+  modules: ['@nuxt/ui', '@vueuse/nuxt'],
   css: ['~/assets/css/main.css'],
   icon: {
     serverBundle: {
@@ -47,7 +47,7 @@ export default defineNuxtConfig({
   nitro: {
     bodySize: '25MB',
     routeRules: {
-      '/api/**': { csr: false }
+      '/api/**': { csr: false, cors: true }
     }
   }
 })

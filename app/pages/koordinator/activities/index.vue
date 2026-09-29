@@ -1,5 +1,14 @@
 <template>
-  <div>
+<UDashboardPanel id="koordinator-activities">
+  <template #header>
+    <UDashboardNavbar title="Aktivitas Wilayah">
+      <template #leading>
+        <UDashboardSidebarCollapse />
+      </template>
+    </UDashboardNavbar>
+  </template>
+
+  <template #body>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Aktivitas Wilayah</h1>
     </div>
@@ -10,7 +19,8 @@
       </UCard>
       <ActivityCard v-for="activity in activities" :key="activity.id" :activity="activity" />
     </div>
-  </div>
+  </template>
+</UDashboardPanel>
 </template>
 
 <script setup lang="ts">

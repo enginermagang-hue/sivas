@@ -1,51 +1,91 @@
 <template>
-  <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Kelola Wilayah</h1>
-      <UButton icon="i-lucide-plus" @click="openCreate">Tambah Wilayah</UButton>
-    </div>
-
-    <UCard>
-      <UTable :rows="regions" :columns="columns">
-        <template #actions-data="{ row }">
-          <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" @click="openEdit(row)" />
-          <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="sm" @click="confirmDelete(row)" />
+  <UDashboardPanel id="admin-regions">
+    <template #header>
+      <UDashboardNavbar title="Kelola Wilayah">
+        <template #leading>
+          <UDashboardSidebarCollapse />
         </template>
-      </UTable>
-    </UCard>
 
-    <UModal v-model="showModal" :title="editingRegion ? 'Edit Wilayah' : 'Tambah Wilayah'">
-      <UForm :state="form" @submit="handleSubmit">
-        <div class="space-y-4">
-          <UFormField label="Nama Wilayah" name="nama" required>
-            <UInput v-model="form.nama" />
-          </UFormField>
-          <UFormField label="Kode Wilayah" name="kode" required>
-            <UInput v-model="form.kode" />
-          </UFormField>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton type="button" variant="ghost" @click="showModal = false">Batal</UButton>
-            <UButton type="submit" :loading="saving">Simpan</UButton>
-          </div>
+        <template #right>
+          <RegionsAddModal @submit="handleModalSubmit" />
         </template>
-      </UForm>
-    </UModal>
+      </UDashboardNavbar>
+    </template>
 
-    <UModal v-model="showDeleteModal" title="Hapus Wilayah">
-      <p class="text-gray-600 dark:text-gray-300">Apakah Anda yakin ingin menghapus wilayah <strong>{{ deletingRegion?.nama }}</strong>?</p>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="showDeleteModal = false">Batal</UButton>
-          <UButton color="error" :loading="deleting" @click="handleDelete">Hapus</UButton>
+    <template #body>
+      <div class="flex flex-wrap items-center justify-between gap-1.5">
+        <UInput
+          v-model="search"
+          class="max-w-sm"
+          icon="i-lucide-search"
+          placeholder="Cari wilayah..."
+        />
+
+        <div class="flex flex-wrap items-center gap-1.5">
+          <RegionsDeleteModal :count="selectedCount" @confirm="handleBulkDelete">
+            <UButton
+              v-if="selectedCount"
+              label="Hapus"
+              color="error"
+              variant="subtle"
+              icon="i-lucide-trash"
+            >
+              <template #trailing>
+                <UBadge color="error" variant="solid">{{ selectedCount }}</UBadge>
+              </template>
+            </UButton>
+          </RegionsDeleteModal>
         </div>
-      </template>
-    </UModal>
-  </div>
+      </div>
+
+      <UTable
+        ref="table"
+        v-model:row-selection="rowSelection"
+        v-model:pagination="pagination"
+        :pagination-options="{
+          getPaginationRowModel: getPaginationRowModel()
+        }"
+        class="shrink-0"
+        :data="regions"
+        :columns="columns"
+        :loading="loading"
+        :ui="{
+          base: 'table-fixed border-separate border-spacing-0',
+          thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
+          tbody: '[&>tr]:last:[&>td]:border-b-0',
+          th: 'py-2 first:rounded-l-lg last:rounded-r-lg border-y border-default first:border-l last:border-r',
+          td: 'border-b border-default',
+          separator: 'h-0'
+        }"
+      />
+
+      <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
+        <div class="text-sm text-muted">
+          {{ selectedCount }} dari {{ filteredRegions.length }} data terpilih.
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <UPagination
+            :default-page="pagination.pageIndex + 1"
+            :items-per-page="pagination.pageSize"
+            :total="filteredRegions.length"
+            @update:page="(p: number) => table.tableApi.setPageIndex(p - 1)"
+          />
+        </div>
+      </div>
+    </template>
+  </UDashboardPanel>
+
+  <RegionsAddModal ref="regionsAddModal" @submit="handleModalSubmit" />
 </template>
 
 <script setup lang="ts">
+import RegionsAddModal from '~/components/admin/RegionsAddModal.vue'
+import RegionsDeleteModal from '~/components/admin/RegionsDeleteModal.vue'
+import { getPaginationRowModel } from '@tanstack/table-core'
+import { upperFirst } from 'scule'
+import type { TableColumn } from '@nuxt/ui'
+
 definePageMeta({
   layout: 'default'
 })
@@ -58,82 +98,162 @@ if (user.value?.role !== 'admin') {
 }
 
 const regions = ref<any[]>([])
-const showModal = ref(false)
-const showDeleteModal = ref(false)
-const editingRegion = ref<any>(null)
-const deletingRegion = ref<any>(null)
-const saving = ref(false)
-const deleting = ref(false)
+const loading = ref(false)
 
-const form = reactive({
-  nama: '',
-  kode: ''
+const regionsAddModal = ref<InstanceType<typeof RegionsAddModal> | null>(null)
+const table = useTemplateRef('table')
+
+const search = ref('')
+const rowSelection = ref<Record<string, boolean>>({})
+const pagination = ref({
+  pageIndex: 0,
+  pageSize: 10
 })
 
-const columns = [
-  { key: 'nama', label: 'Nama Wilayah' },
-  { key: 'kode', label: 'Kode' },
-  { key: 'actions', label: 'Aksi' }
+const filteredRegions = computed(() => {
+  let result = [...regions.value]
+
+  if (search.value) {
+    const q = search.value.toLowerCase()
+    result = result.filter((r: any) =>
+      (r.nama || '').toLowerCase().includes(q) ||
+      (r.kode || '').toLowerCase().includes(q)
+    )
+  }
+
+  return result
+})
+
+const selectedCount = computed(() => {
+  return Object.values(rowSelection.value).filter(Boolean).length
+})
+
+const columns: TableColumn<any>[] = [
+  {
+    id: 'select',
+    header: ({ table: t }: any) =>
+      h(resolveComponent('UCheckbox'), {
+        modelValue: t.getIsSomePageRowsSelected()
+          ? 'indeterminate'
+          : t.getIsAllPageRowsSelected(),
+        'onUpdate:modelValue': (value: boolean | 'indeterminate') =>
+          t.toggleAllPageRowsSelected(!!value),
+        ariaLabel: 'Select all'
+      }),
+    cell: ({ row }: any) =>
+      h(resolveComponent('UCheckbox'), {
+        modelValue: row.getIsSelected(),
+        'onUpdate:modelValue': (value: boolean | 'indeterminate') => row.toggleSelected(!!value),
+        ariaLabel: 'Select row'
+      })
+  },
+  {
+    accessorKey: 'nama',
+    header: 'Nama Wilayah',
+    cell: ({ row }: any) => row.original.nama
+  },
+  {
+    accessorKey: 'kode',
+    header: 'Kode',
+    cell: ({ row }: any) => row.original.kode
+  },
+  {
+    id: 'actions',
+    cell: ({ row }: any) => {
+      const items = [
+        {
+          label: 'Edit',
+          icon: 'i-lucide-pencil',
+          onSelect() {
+            regionsAddModal.value?.openEdit(row.original)
+          }
+        },
+        {
+          label: 'Hapus',
+          icon: 'i-lucide-trash-2',
+          color: 'error' as const,
+          onSelect() {
+            handleModalDelete(row.original)
+          }
+        }
+      ]
+
+      return h(
+        'div',
+        { class: 'text-right' },
+        h(
+          resolveComponent('UDropdownMenu'),
+          {
+            content: { align: 'end' },
+            items
+          },
+          () =>
+            h(resolveComponent('UButton'), {
+              icon: 'i-lucide-ellipsis-vertical',
+              color: 'neutral',
+              variant: 'ghost',
+              class: 'ml-auto'
+            })
+        )
+      )
+    }
+  }
 ]
 
 async function loadRegions() {
-  const data = await $fetch('/api/regions')
-  regions.value = data
-}
-
-function openCreate() {
-  editingRegion.value = null
-  Object.assign(form, { nama: '', kode: '' })
-  showModal.value = true
+  loading.value = true
+  try {
+    const data = await $fetch('/api/regions')
+    regions.value = data
+  } finally {
+    loading.value = false
+  }
 }
 
 function openEdit(row: any) {
-  editingRegion.value = row
-  Object.assign(form, { nama: row.nama, kode: row.kode })
-  showModal.value = true
+  regionsAddModal.value?.openEdit(row)
 }
 
-function confirmDelete(row: any) {
-  deletingRegion.value = row
-  showDeleteModal.value = true
-}
-
-async function handleSubmit() {
-  saving.value = true
+async function handleModalSubmit({ data, editing }: any) {
   try {
-    if (editingRegion.value) {
-      await $fetch(`/api/regions/${editingRegion.value.id}`, {
+    if (editing) {
+      await $fetch(`/api/regions/${editing.id}`, {
         method: 'PUT',
-        body: form
+        body: data
       })
       toast.add({ color: 'success', title: 'Wilayah berhasil diperbarui' })
     } else {
       await $fetch('/api/regions', {
         method: 'POST',
-        body: form
+        body: data
       })
       toast.add({ color: 'success', title: 'Wilayah berhasil ditambahkan' })
     }
-    showModal.value = false
     await loadRegions()
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan' })
-  } finally {
-    saving.value = false
   }
 }
 
-async function handleDelete() {
-  deleting.value = true
+async function handleModalDelete(region: any) {
   try {
-    await $fetch(`/api/regions/${deletingRegion.value.id}`, { method: 'DELETE' })
+    await $fetch(`/api/regions/${region.id}`, { method: 'DELETE' })
     toast.add({ color: 'success', title: 'Wilayah berhasil dihapus' })
-    showDeleteModal.value = false
     await loadRegions()
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menghapus' })
-  } finally {
-    deleting.value = false
+  }
+}
+
+async function handleBulkDelete() {
+  try {
+    const selectedIds = Object.keys(rowSelection.value).filter(key => rowSelection.value[key])
+    await Promise.all(selectedIds.map(id => $fetch(`/api/regions/${id}`, { method: 'DELETE' })))
+    toast.add({ color: 'success', title: `${selectedIds.length} wilayah berhasil dihapus` })
+    rowSelection.value = {}
+    await loadRegions()
+  } catch (e: any) {
+    toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menghapus' })
   }
 }
 

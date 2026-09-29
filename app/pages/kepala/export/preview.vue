@@ -1,14 +1,21 @@
 <template>
-  <div class="print-area">
-    <div class="no-print flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Preview Laporan</h1>
-      <div class="flex gap-2">
-        <UButton icon="i-lucide-printer" @click="window.print()">Print</UButton>
-        <UButton variant="ghost" @click="navigateTo('/kepala/export')">Kembali</UButton>
-      </div>
-    </div>
+<UDashboardPanel id="kepala-export-preview">
+  <template #header>
+    <UDashboardNavbar title="Preview Laporan">
+      <template #leading>
+        <UDashboardSidebarCollapse />
+      </template>
+      <template #right>
+        <div class="flex gap-2">
+          <UButton icon="i-lucide-printer" @click="window.print()">Print</UButton>
+          <UButton variant="ghost" @click="navigateTo('/kepala/export')">Kembali</UButton>
+        </div>
+      </template>
+    </UDashboardNavbar>
+  </template>
 
-    <UCard>
+  <template #body>
+    <div class="print-area">
       <div class="text-center mb-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-white">Laporan Aktivitas Harian</h2>
         <p class="text-sm text-gray-500 mt-1">
@@ -17,13 +24,16 @@
         <p class="text-sm text-gray-500">Dicetak: {{ new Date().toLocaleString('id-ID') }}</p>
       </div>
 
-      <UTable :rows="activities" :columns="columns">
-        <template #no-data="{ row }">
-          <span class="text-center text-gray-500 py-4">Tidak ada data</span>
-        </template>
-      </UTable>
-    </UCard>
-  </div>
+      <UCard>
+        <UTable :rows="activities" :columns="columns">
+          <template #no-data="{ row }">
+            <span class="text-center text-gray-500 py-4">Tidak ada data</span>
+          </template>
+        </UTable>
+      </UCard>
+    </div>
+  </template>
+</UDashboardPanel>
 </template>
 
 <script setup lang="ts">
@@ -35,14 +45,14 @@ const activities = ref<any[]>([])
 const filterText = ref('')
 
 const columns = [
-  { key: 'no', label: 'No' },
-  { key: 'tanggal', label: 'Tanggal' },
-  { key: 'wilayah', label: 'Wilayah' },
-  { key: 'nama', label: 'Nama' },
-  { key: 'kategori', label: 'Kategori' },
-  { key: 'jam_mulai', label: 'Jam Mulai' },
-  { key: 'jam_selesai', label: 'Jam Selesai' },
-  { key: 'deskripsi', label: 'Deskripsi' }
+  { id: 'no', key: 'no', label: 'No' },
+  { id: 'tanggal', key: 'tanggal', label: 'Tanggal' },
+  { id: 'wilayah', key: 'wilayah', label: 'Wilayah' },
+  { id: 'nama', key: 'nama', label: 'Nama' },
+  { id: 'kategori', key: 'kategori', label: 'Kategori' },
+  { id: 'jam_mulai', key: 'jam_mulai', label: 'Jam Mulai' },
+  { id: 'jam_selesai', key: 'jam_selesai', label: 'Jam Selesai' },
+  { id: 'deskripsi', key: 'deskripsi', label: 'Deskripsi' }
 ]
 
 async function loadActivities() {

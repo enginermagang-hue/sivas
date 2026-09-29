@@ -1,8 +1,19 @@
 <template>
-  <div>
+<UDashboardPanel id="kepala-activities">
+  <template #header>
+    <UDashboardNavbar title="Semua Aktivitas">
+      <template #leading>
+        <UDashboardSidebarCollapse />
+      </template>
+      <template #right>
+        <UButton icon="i-lucide-download" to="/kepala/export">Export</UButton>
+      </template>
+    </UDashboardNavbar>
+  </template>
+
+  <template #body>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Semua Aktivitas</h1>
-      <UButton icon="i-lucide-download" to="/kepala/export">Export</UButton>
     </div>
 
     <UCard class="mb-6">
@@ -46,7 +57,8 @@
       </UCard>
       <ActivityCard v-for="activity in activities" :key="activity.id" :activity="activity" />
     </div>
-  </div>
+  </template>
+</UDashboardPanel>
 </template>
 
 <script setup lang="ts">

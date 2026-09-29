@@ -1,8 +1,19 @@
 <template>
-  <div>
+<UDashboardPanel id="anggota-activities">
+  <template #header>
+    <UDashboardNavbar title="Aktivitas Saya">
+      <template #leading>
+        <UDashboardSidebarCollapse />
+      </template>
+      <template #right>
+        <UButton icon="i-lucide-plus" to="/anggota/input">Input Aktivitas</UButton>
+      </template>
+    </UDashboardNavbar>
+  </template>
+
+  <template #body>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Aktivitas Saya</h1>
-      <UButton icon="i-lucide-plus" to="/anggota/input">Input Aktivitas</UButton>
     </div>
 
     <div class="space-y-4">
@@ -11,7 +22,8 @@
       </UCard>
       <ActivityCard v-for="activity in activities" :key="activity.id" :activity="activity" />
     </div>
-  </div>
+  </template>
+</UDashboardPanel>
 </template>
 
 <script setup lang="ts">

@@ -1,5 +1,14 @@
 <template>
-  <div>
+<UDashboardPanel id="anggota-input">
+  <template #header>
+    <UDashboardNavbar title="Input Aktivitas">
+      <template #leading>
+        <UDashboardSidebarCollapse />
+      </template>
+    </UDashboardNavbar>
+  </template>
+
+  <template #body>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Input Aktivitas</h1>
     </div>
@@ -11,7 +20,8 @@
         @cancel="navigateTo('/anggota/activities')"
       />
     </UCard>
-  </div>
+  </template>
+</UDashboardPanel>
 </template>
 
 <script setup lang="ts">

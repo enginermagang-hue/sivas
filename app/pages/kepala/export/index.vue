@@ -1,5 +1,14 @@
 <template>
-  <div>
+<UDashboardPanel id="kepala-export">
+  <template #header>
+    <UDashboardNavbar title="Export Laporan">
+      <template #leading>
+        <UDashboardSidebarCollapse />
+      </template>
+    </UDashboardNavbar>
+  </template>
+
+  <template #body>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Export Laporan</h1>
     </div>
@@ -42,7 +51,8 @@
         </div>
       </UForm>
     </UCard>
-  </div>
+  </template>
+</UDashboardPanel>
 </template>
 
 <script setup lang="ts">

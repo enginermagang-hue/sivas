@@ -1,14 +1,18 @@
 export const useI18n = () => {
   const locale = useState<string>('app-locale', () => 'id')
-  const locales: Record<string, Record<string, any>> = {
-    id: {} as any,
-    en: {} as any
-  }
+
+  const id = {} as any
+  const en = {} as any
 
   async function loadLocale(loc: string) {
-    if (locales[loc] && Object.keys(locales[loc]).length > 0) return
-    const mod = await import(`./${loc}.json`)
-    locales[loc] = mod.default || mod
+    if (loc === 'id' && Object.keys(id).length > 0) return
+    if (loc === 'en' && Object.keys(en).length > 0) return
+
+    const idMod = await import('../locales/id.json')
+    const enMod = await import('../locales/en.json')
+
+    Object.assign(id, idMod.default || idMod)
+    Object.assign(en, enMod.default || enMod)
   }
 
   async function setLocale(loc: string) {
@@ -20,22 +24,22 @@ export const useI18n = () => {
   }
 
   async function init() {
+    await loadLocale(locale.value)
     if (process.client) {
       const saved = localStorage.getItem('app-locale')
       if (saved && saved !== locale.value) {
         await setLocale(saved)
       }
     }
-    await loadLocale(locale.value)
   }
 
   function t(key: string, fallback?: string): string {
-    const dict = locales[locale.value] || {}
+    const dict = locale.value === 'en' ? en : id
     const val = key.split('.').reduce<any>((acc, part) => (acc ? acc[part] : null), dict)
     if (val !== null && val !== undefined) return String(val)
-    const enDict = locales['en'] || {}
-    const enVal = key.split('.').reduce<any>((acc, part) => (acc ? acc[part] : null), enDict)
-    if (enVal !== null && enVal !== undefined) return String(enVal)
+    const fallbackDict = locale.value === 'id' ? en : id
+    const fallbackVal = key.split('.').reduce<any>((acc, part) => (acc ? acc[part] : null), fallbackDict)
+    if (fallbackVal !== null && fallbackVal !== undefined) return String(fallbackVal)
     return fallback || key
   }
 

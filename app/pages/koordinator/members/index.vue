@@ -1,5 +1,14 @@
 <template>
-  <div>
+<UDashboardPanel id="koordinator-members">
+  <template #header>
+    <UDashboardNavbar title="Daftar Anggota Wilayah">
+      <template #leading>
+        <UDashboardSidebarCollapse />
+      </template>
+    </UDashboardNavbar>
+  </template>
+
+  <template #body>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Daftar Anggota Wilayah</h1>
     </div>
@@ -25,7 +34,8 @@
         </template>
       </UTable>
     </UCard>
-  </div>
+  </template>
+</UDashboardPanel>
 </template>
 
 <script setup lang="ts">
@@ -37,10 +47,10 @@ const { user } = useAuth()
 const members = ref<any[]>([])
 
 const columns = [
-  { key: 'nama', label: 'Nama' },
-  { key: 'email', label: 'Email' },
-  { key: 'status', label: 'Status' },
-  { key: 'actions', label: 'Aksi' }
+  { id: 'nama', key: 'nama', label: 'Nama' },
+  { id: 'email', key: 'email', label: 'Email' },
+  { id: 'status', key: 'status', label: 'Status' },
+  { id: 'actions', key: 'actions', label: 'Aksi' }
 ]
 
 async function loadMembers() {

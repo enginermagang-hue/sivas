@@ -12,9 +12,12 @@
     "migrate:fresh": "npx tsx scripts/migrate-fresh.ts"
   },
   "dependencies": {
+    "@iconify-json/lucide": "^1.2.137",
+    "@iconify-json/simple-icons": "^1.2.98",
     "@libsql/client": "^0.18.0",
     "@nuxt/ui": "^4.11.2",
     "@vueuse/core": "^15.0.0",
+    "@vueuse/nuxt": "^15.0.0",
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
     "dotenv": "^18.0.4",

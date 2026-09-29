@@ -1,67 +1,91 @@
 <template>
-  <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Kelola Kategori</h1>
-      <UButton icon="i-lucide-plus" @click="openCreate">Tambah Kategori</UButton>
-    </div>
+  <UDashboardPanel id="admin-categories">
+    <template #header>
+      <UDashboardNavbar title="Kelola Kategori">
+        <template #leading>
+          <UDashboardSidebarCollapse />
+        </template>
 
-    <UCard>
-      <UTable :rows="categories" :columns="columns">
-        <template #warna-data="{ row }">
-          <div class="flex items-center gap-2">
-            <span class="w-4 h-4 rounded-full" :style="{ backgroundColor: row.warna }"></span>
-            <span class="text-sm text-gray-600 dark:text-gray-300">{{ row.warna }}</span>
-          </div>
+        <template #right>
+          <CategoriesAddModal @submit="handleModalSubmit" />
         </template>
-        <template #icon-data="{ row }">
-          <span v-if="row.icon" class="text-sm text-gray-600 dark:text-gray-300">{{ row.icon }}</span>
-          <span v-else class="text-sm text-gray-400">-</span>
-        </template>
-        <template #actions-data="{ row }">
-          <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="sm" @click="openEdit(row)" />
-          <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="sm" @click="confirmDelete(row)" />
-        </template>
-      </UTable>
-    </UCard>
+      </UDashboardNavbar>
+    </template>
 
-    <UModal v-model="showModal" :title="editingCategory ? 'Edit Kategori' : 'Tambah Kategori'">
-      <UForm :state="form" @submit="handleSubmit">
-        <div class="space-y-4">
-          <UFormField label="Nama Kategori" name="nama" required>
-            <UInput v-model="form.nama" />
-          </UFormField>
-          <UFormField label="Warna" name="warna">
-            <div class="flex items-center gap-2">
-              <UInput v-model="form.warna" type="color" class="w-16 h-10" />
-              <UInput v-model="form.warna" placeholder="#3B82F6" />
-            </div>
-          </UFormField>
-          <UFormField label="Icon" name="icon">
-            <UInput v-model="form.icon" placeholder="contoh: i-lucide-star" />
-          </UFormField>
+    <template #body>
+      <div class="flex flex-wrap items-center justify-between gap-1.5">
+        <UInput
+          v-model="search"
+          class="max-w-sm"
+          icon="i-lucide-search"
+          placeholder="Cari kategori..."
+        />
+
+        <div class="flex flex-wrap items-center gap-1.5">
+          <CategoriesDeleteModal :count="selectedCount" @confirm="handleBulkDelete">
+            <UButton
+              v-if="selectedCount"
+              label="Hapus"
+              color="error"
+              variant="subtle"
+              icon="i-lucide-trash"
+            >
+              <template #trailing>
+                <UBadge color="error" variant="solid">{{ selectedCount }}</UBadge>
+              </template>
+            </UButton>
+          </CategoriesDeleteModal>
         </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton type="button" variant="ghost" @click="showModal = false">Batal</UButton>
-            <UButton type="submit" :loading="saving">Simpan</UButton>
-          </div>
-        </template>
-      </UForm>
-    </UModal>
+      </div>
 
-    <UModal v-model="showDeleteModal" title="Hapus Kategori">
-      <p class="text-gray-600 dark:text-gray-300">Apakah Anda yakin ingin menghapus kategori <strong>{{ deletingCategory?.nama }}</strong>?</p>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="showDeleteModal = false">Batal</UButton>
-          <UButton color="error" :loading="deleting" @click="handleDelete">Hapus</UButton>
+      <UTable
+        ref="table"
+        v-model:row-selection="rowSelection"
+        v-model:pagination="pagination"
+        :pagination-options="{
+          getPaginationRowModel: getPaginationRowModel()
+        }"
+        class="shrink-0"
+        :data="categories"
+        :columns="columns"
+        :loading="loading"
+        :ui="{
+          base: 'table-fixed border-separate border-spacing-0',
+          thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
+          tbody: '[&>tr]:last:[&>td]:border-b-0',
+          th: 'py-2 first:rounded-l-lg last:rounded-r-lg border-y border-default first:border-l last:border-r',
+          td: 'border-b border-default',
+          separator: 'h-0'
+        }"
+      />
+
+      <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
+        <div class="text-sm text-muted">
+          {{ selectedCount }} dari {{ filteredCategories.length }} data terpilih.
         </div>
-      </template>
-    </UModal>
-  </div>
+
+        <div class="flex items-center gap-1.5">
+          <UPagination
+            :default-page="pagination.pageIndex + 1"
+            :items-per-page="pagination.pageSize"
+            :total="filteredCategories.length"
+            @update:page="(p: number) => table.tableApi.setPageIndex(p - 1)"
+          />
+        </div>
+      </div>
+    </template>
+  </UDashboardPanel>
+
+  <CategoriesAddModal ref="categoriesAddModal" @submit="handleModalSubmit" />
 </template>
 
 <script setup lang="ts">
+import CategoriesAddModal from '~/components/admin/CategoriesAddModal.vue'
+import CategoriesDeleteModal from '~/components/admin/CategoriesDeleteModal.vue'
+import { getPaginationRowModel } from '@tanstack/table-core'
+import { upperFirst } from 'scule'
+import type { TableColumn } from '@nuxt/ui'
+
 definePageMeta({
   layout: 'default'
 })
@@ -74,84 +98,180 @@ if (user.value?.role !== 'admin') {
 }
 
 const categories = ref<any[]>([])
-const showModal = ref(false)
-const showDeleteModal = ref(false)
-const editingCategory = ref<any>(null)
-const deletingCategory = ref<any>(null)
-const saving = ref(false)
-const deleting = ref(false)
+const loading = ref(false)
 
-const form = reactive({
-  nama: '',
-  warna: '#3B82F6',
-  icon: ''
+const categoriesAddModal = ref<InstanceType<typeof CategoriesAddModal> | null>(null)
+const table = useTemplateRef('table')
+
+const search = ref('')
+const rowSelection = ref<Record<string, boolean>>({})
+const pagination = ref({
+  pageIndex: 0,
+  pageSize: 10
 })
 
-const columns = [
-  { key: 'nama', label: 'Nama' },
-  { key: 'warna', label: 'Warna' },
-  { key: 'icon', label: 'Icon' },
-  { key: 'actions', label: 'Aksi' }
+const filteredCategories = computed(() => {
+  let result = [...categories.value]
+
+  if (search.value) {
+    const q = search.value.toLowerCase()
+    result = result.filter((c: any) =>
+      (c.nama || '').toLowerCase().includes(q) ||
+      (c.warna || '').toLowerCase().includes(q) ||
+      (c.icon || '').toLowerCase().includes(q)
+    )
+  }
+
+  return result
+})
+
+const selectedCount = computed(() => {
+  return Object.values(rowSelection.value).filter(Boolean).length
+})
+
+const columns: TableColumn<any>[] = [
+  {
+    id: 'select',
+    header: ({ table: t }: any) =>
+      h(resolveComponent('UCheckbox'), {
+        modelValue: t.getIsSomePageRowsSelected()
+          ? 'indeterminate'
+          : t.getIsAllPageRowsSelected(),
+        'onUpdate:modelValue': (value: boolean | 'indeterminate') =>
+          t.toggleAllPageRowsSelected(!!value),
+        ariaLabel: 'Select all'
+      }),
+    cell: ({ row }: any) =>
+      h(resolveComponent('UCheckbox'), {
+        modelValue: row.getIsSelected(),
+        'onUpdate:modelValue': (value: boolean | 'indeterminate') => row.toggleSelected(!!value),
+        ariaLabel: 'Select row'
+      })
+  },
+  {
+    accessorKey: 'nama',
+    header: 'Nama',
+    cell: ({ row }: any) => {
+      const c = row.original
+      return h('div', { class: 'flex items-center gap-3' }, [
+        h('span', {
+          class: 'w-4 h-4 rounded-full',
+          style: { backgroundColor: c.warna || '#ccc' }
+        }),
+        h('div', undefined, [
+          h('p', { class: 'font-medium text-highlighted' }, c.nama),
+          h('p', { class: 'text-sm text-muted' }, c.icon || '-')
+        ])
+      ])
+    }
+  },
+  {
+    accessorKey: 'warna',
+    header: 'Warna',
+    cell: ({ row }: any) => row.original.warna || '-'
+  },
+  {
+    accessorKey: 'icon',
+    header: 'Icon',
+    cell: ({ row }: any) => row.original.icon || '-'
+  },
+  {
+    id: 'actions',
+    cell: ({ row }: any) => {
+      const items = [
+        {
+          label: 'Edit',
+          icon: 'i-lucide-pencil',
+          onSelect() {
+            categoriesAddModal.value?.openEdit(row.original)
+          }
+        },
+        {
+          label: 'Hapus',
+          icon: 'i-lucide-trash-2',
+          color: 'error' as const,
+          onSelect() {
+            handleModalDelete(row.original)
+          }
+        }
+      ]
+
+      return h(
+        'div',
+        { class: 'text-right' },
+        h(
+          resolveComponent('UDropdownMenu'),
+          {
+            content: { align: 'end' },
+            items
+          },
+          () =>
+            h(resolveComponent('UButton'), {
+              icon: 'i-lucide-ellipsis-vertical',
+              color: 'neutral',
+              variant: 'ghost',
+              class: 'ml-auto'
+            })
+        )
+      )
+    }
+  }
 ]
 
 async function loadCategories() {
-  const data = await $fetch('/api/categories')
-  categories.value = data
-}
-
-function openCreate() {
-  editingCategory.value = null
-  Object.assign(form, { nama: '', warna: '#3B82F6', icon: '' })
-  showModal.value = true
+  loading.value = true
+  try {
+    const data = await $fetch('/api/categories')
+    categories.value = data
+  } finally {
+    loading.value = false
+  }
 }
 
 function openEdit(row: any) {
-  editingCategory.value = row
-  Object.assign(form, { nama: row.nama, warna: row.warna, icon: row.icon || '' })
-  showModal.value = true
+  categoriesAddModal.value?.openEdit(row)
 }
 
-function confirmDelete(row: any) {
-  deletingCategory.value = row
-  showDeleteModal.value = true
-}
-
-async function handleSubmit() {
-  saving.value = true
+async function handleModalSubmit({ data, editing }: any) {
   try {
-    if (editingCategory.value) {
-      await $fetch(`/api/categories/${editingCategory.value.id}`, {
+    if (editing) {
+      await $fetch(`/api/categories/${editing.id}`, {
         method: 'PUT',
-        body: form
+        body: data
       })
       toast.add({ color: 'success', title: 'Kategori berhasil diperbarui' })
     } else {
       await $fetch('/api/categories', {
         method: 'POST',
-        body: form
+        body: data
       })
       toast.add({ color: 'success', title: 'Kategori berhasil ditambahkan' })
     }
-    showModal.value = false
     await loadCategories()
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan' })
-  } finally {
-    saving.value = false
   }
 }
 
-async function handleDelete() {
-  deleting.value = true
+async function handleModalDelete(category: any) {
   try {
-    await $fetch(`/api/categories/${deletingCategory.value.id}`, { method: 'DELETE' })
+    await $fetch(`/api/categories/${category.id}`, { method: 'DELETE' })
     toast.add({ color: 'success', title: 'Kategori berhasil dihapus' })
-    showDeleteModal.value = false
     await loadCategories()
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menghapus' })
-  } finally {
-    deleting.value = false
+  }
+}
+
+async function handleBulkDelete() {
+  try {
+    const selectedIds = Object.keys(rowSelection.value).filter(key => rowSelection.value[key])
+    await Promise.all(selectedIds.map(id => $fetch(`/api/categories/${id}`, { method: 'DELETE' })))
+    toast.add({ color: 'success', title: `${selectedIds.length} kategori berhasil dihapus` })
+    rowSelection.value = {}
+    await loadCategories()
+  } catch (e: any) {
+    toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menghapus' })
   }
 }
 

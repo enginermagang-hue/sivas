@@ -1,5 +1,14 @@
 <template>
-  <div>
+<UDashboardPanel id="koordinator-input">
+  <template #header>
+    <UDashboardNavbar title="Input Aktivitas untuk Anggota">
+      <template #leading>
+        <UDashboardSidebarCollapse />
+      </template>
+    </UDashboardNavbar>
+  </template>
+
+  <template #body>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Input Aktivitas untuk Anggota</h1>
     </div>
@@ -28,7 +37,8 @@
         </div>
       </UForm>
     </UCard>
-  </div>
+  </template>
+</UDashboardPanel>
 </template>
 
 <script setup lang="ts">
