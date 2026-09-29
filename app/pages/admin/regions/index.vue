@@ -7,7 +7,7 @@
         </template>
 
         <template #right>
-          <RegionsAddModal @submit="handleModalSubmit" />
+          <RegionsAddModal ref="regionsAddModal" @submit="handleModalSubmit" />
         </template>
       </UDashboardNavbar>
     </template>
@@ -75,8 +75,6 @@
       </div>
     </template>
   </UDashboardPanel>
-
-  <RegionsAddModal ref="regionsAddModal" @submit="handleModalSubmit" />
 </template>
 
 <script setup lang="ts">
@@ -229,6 +227,7 @@ async function handleModalSubmit({ data, editing }: any) {
       })
       toast.add({ color: 'success', title: 'Wilayah berhasil ditambahkan' })
     }
+    regionsAddModal.value?.close()
     await loadRegions()
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan' })

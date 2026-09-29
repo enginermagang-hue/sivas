@@ -8,6 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
     "migrate": "npx tsx scripts/migrate.ts",
     "migrate:fresh": "npx tsx scripts/migrate-fresh.ts"
   },
@@ -31,6 +32,8 @@
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
-    "tsx": "^4.23.15"
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.3.11"
   }
 }

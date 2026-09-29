@@ -7,7 +7,7 @@
         </template>
 
         <template #right>
-          <CategoriesAddModal @submit="handleModalSubmit" />
+          <CategoriesAddModal ref="categoriesAddModal" @submit="handleModalSubmit" />
         </template>
       </UDashboardNavbar>
     </template>
@@ -75,8 +75,6 @@
       </div>
     </template>
   </UDashboardPanel>
-
-  <CategoriesAddModal ref="categoriesAddModal" @submit="handleModalSubmit" />
 </template>
 
 <script setup lang="ts">
@@ -247,6 +245,7 @@ async function handleModalSubmit({ data, editing }: any) {
       })
       toast.add({ color: 'success', title: 'Kategori berhasil ditambahkan' })
     }
+    categoriesAddModal.value?.close()
     await loadCategories()
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan' })

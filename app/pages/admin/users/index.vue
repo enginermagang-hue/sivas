@@ -7,7 +7,7 @@
         </template>
 
         <template #right>
-          <UsersAddModal @submit="handleModalSubmit" />
+          <UsersAddModal ref="usersAddModal" @submit="handleModalSubmit" />
         </template>
       </UDashboardNavbar>
     </template>
@@ -99,8 +99,6 @@
       </div>
     </template>
   </UDashboardPanel>
-
-  <UsersAddModal ref="usersAddModal" @submit="handleModalSubmit" />
 </template>
 
 <script setup lang="ts">
@@ -312,6 +310,7 @@ async function handleModalSubmit({ data, editing }: any) {
       })
       toast.add({ color: 'success', title: 'Pengguna berhasil ditambahkan' })
     }
+    usersAddModal.value?.close()
     await loadUsers()
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan' })
