@@ -9,7 +9,7 @@
       </template>
 
       <form @submit.prevent="handleLogin" class="space-y-4">
-        <UFormGroup label="Email" name="email">
+        <UFormField label="Email" name="email">
           <UInput
             v-model="email"
             type="email"
@@ -17,9 +17,9 @@
             :disabled="loading"
             required
           />
-        </UFormGroup>
+        </UFormField>
 
-        <UFormGroup label="Password" name="password">
+        <UFormField label="Password" name="password">
           <UInput
             v-model="password"
             type="password"
@@ -27,7 +27,7 @@
             :disabled="loading"
             required
           />
-        </UFormGroup>
+        </UFormField>
 
         <UAlert
           v-if="error"
