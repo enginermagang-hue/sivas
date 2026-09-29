@@ -1,0 +1,48 @@
+{
+  "app": {
+    "name": "Daily Activity",
+    "login": "Login",
+    "logout": "Logout",
+    "dashboard": "Dashboard",
+    "admin": "Admin",
+    "koordinator": "Coordinator",
+    "anggota": "Member",
+    "kepala": "Head"
+  },
+  "menu": {
+    "home": "Home",
+    "users": "Users",
+    "regions": "Regions",
+    "categories": "Categories",
+    "activities": "Activities",
+    "input": "Input",
+    "members": "Members",
+    "export": "Export",
+    "settings": "Settings"
+  },
+  "form": {
+    "email": "Email",
+    "password": "Password",
+    "nama": "Name",
+    "role": "Role",
+    "region": "Region",
+    "category": "Category",
+    "tanggal": "Date",
+    "jam_mulai": "Start Time",
+    "jam_selesai": "End Time",
+    "deskripsi": "Description",
+    "lampiran": "Attachment",
+    "submit": "Save",
+    "cancel": "Cancel",
+    "search": "Search..."
+  },
+  "message": {
+    "login_success": "Login successful",
+    "login_failed": "Invalid email or password",
+    "save_success": "Data saved successfully",
+    "delete_success": "Data deleted successfully",
+    "delete_confirm": "Are you sure you want to delete?",
+    "no_data": "No data",
+    "offline_saved": "Data saved offline, will sync when online"
+  }
+}

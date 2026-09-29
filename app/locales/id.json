@@ -1,0 +1,48 @@
+{
+  "app": {
+    "name": "Aktivitas Harian",
+    "login": "Masuk",
+    "logout": "Keluar",
+    "dashboard": "Dashboard",
+    "admin": "Admin",
+    "koordinator": "Koordinator",
+    "anggota": "Anggota",
+    "kepala": "Kepala"
+  },
+  "menu": {
+    "home": "Beranda",
+    "users": "Pengguna",
+    "regions": "Wilayah",
+    "categories": "Kategori",
+    "activities": "Aktivitas",
+    "input": "Input",
+    "members": "Anggota",
+    "export": "Export",
+    "settings": "Pengaturan"
+  },
+  "form": {
+    "email": "Email",
+    "password": "Password",
+    "nama": "Nama",
+    "role": "Role",
+    "region": "Wilayah",
+    "category": "Kategori",
+    "tanggal": "Tanggal",
+    "jam_mulai": "Jam Mulai",
+    "jam_selesai": "Jam Selesai",
+    "deskripsi": "Deskripsi",
+    "lampiran": "Lampiran",
+    "submit": "Simpan",
+    "cancel": "Batal",
+    "search": "Cari..."
+  },
+  "message": {
+    "login_success": "Login berhasil",
+    "login_failed": "Email atau password salah",
+    "save_success": "Data berhasil disimpan",
+    "delete_success": "Data berhasil dihapus",
+    "delete_confirm": "Apakah Anda yakin ingin menghapus?",
+    "no_data": "Tidak ada data",
+    "offline_saved": "Data disimpan offline, akan disinkronisasi saat online"
+  }
+}

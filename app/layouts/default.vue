@@ -40,6 +40,7 @@
             <span class="text-lg font-bold text-gray-900 dark:text-white">Aktivitas Harian</span>
           </div>
           <div class="flex items-center gap-4 ml-auto">
+            <LanguageSwitcher />
             <NotificationBell />
             <UAvatar :text="user?.nama || 'U'" />
             <div class="hidden sm:block">
