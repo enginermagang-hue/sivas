@@ -1,4 +1,4 @@
-import { readValidatedBody } from 'h3'
+import { readValidatedBody, createError } from 'h3'
 import bcrypt from 'bcryptjs'
 import { useDb } from '../../utils/db'
 import { userUpdateSchema } from '../../../lib/validations'
@@ -14,6 +14,20 @@ export default defineEventHandler(async (event) => {
   })
   if (existing.rows.length === 0) {
     throw createError({ statusCode: 404, statusMessage: 'User tidak ditemukan' })
+  }
+  const current = existing.rows[0] as any
+
+  const effectiveRole = body.role ?? current.role
+  const effectiveRegion = body.region_id !== undefined ? body.region_id : current.region_id
+
+  if (effectiveRole === 'koordinator' && effectiveRegion) {
+    const dup = await db.execute({
+      sql: `SELECT id FROM users WHERE role = 'koordinator' AND region_id = ? AND deleted_at IS NULL AND id != ?`,
+      args: [effectiveRegion, id]
+    })
+    if (dup.rows.length > 0) {
+      throw createError({ statusCode: 409, statusMessage: 'Wilayah ini sudah memiliki koordinator' })
+    }
   }
 
   const updates: string[] = []

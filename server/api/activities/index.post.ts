@@ -20,12 +20,11 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const res = await db.execute({
+  await db.execute({
     sql: `INSERT INTO activities (user_id, region_id, kategori_id, tanggal, jam_mulai, jam_selesai, deskripsi) VALUES (?, ?, ?, ?, ?, ?, ?)`,
     args: [body.user_id, body.region_id, body.kategori_id, body.tanggal, body.jam_mulai || null, body.jam_selesai || null, body.deskripsi]
   })
 
-  const activityId = Number((res as any).meta?.last_row_id || (res as any).lastInsertRowId)
   const newActivity = await db.execute({
     sql: `SELECT a.id, a.user_id, a.region_id, a.kategori_id, a.tanggal, a.jam_mulai, a.jam_selesai, a.deskripsi, a.created_at,
                   u.nama as user_nama, r.nama as region_nama, c.nama as kategori_nama
@@ -33,8 +32,7 @@ export default defineEventHandler(async (event) => {
            JOIN users u ON u.id = a.user_id
            JOIN regions r ON r.id = a.region_id
            JOIN categories c ON c.id = a.kategori_id
-           WHERE a.id = ?`,
-    args: [activityId]
+           WHERE a.id = last_insert_rowid()`
   })
 
   return newActivity.rows[0] as any

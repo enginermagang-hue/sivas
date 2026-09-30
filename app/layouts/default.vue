@@ -13,6 +13,7 @@ const links = computed<NavigationMenuItem[][]>(() => {
 
   if (role === 'admin') {
     mainItems.push(
+      { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/admin/dashboard', onSelect: () => { open.value = false } },
       { label: 'Pengguna', icon: 'i-lucide-users', to: '/admin/users', onSelect: () => { open.value = false } },
       { label: 'Wilayah', icon: 'i-lucide-map', to: '/admin/regions', onSelect: () => { open.value = false } },
       { label: 'Kategori', icon: 'i-lucide-tag', to: '/admin/categories', onSelect: () => { open.value = false } }
@@ -25,8 +26,8 @@ const links = computed<NavigationMenuItem[][]>(() => {
     )
   } else if (role === 'anggota') {
     mainItems.push(
-      { label: 'Aktivitas', icon: 'i-lucide-activity', to: '/anggota/activities', onSelect: () => { open.value = false } },
-      { label: 'Input Aktivitas', icon: 'i-lucide-plus-circle', to: '/anggota/input', onSelect: () => { open.value = false } }
+      { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/anggota/dashboard', onSelect: () => { open.value = false } },
+      { label: 'Aktivitas', icon: 'i-lucide-activity', to: '/anggota/activities', onSelect: () => { open.value = false } }
     )
   } else if (role === 'kepala') {
     mainItems.push(
@@ -149,6 +150,7 @@ onMounted(async () => {
 
     <NotificationsSlideover />
 
+    <UToaster />
     <slot />
   </UDashboardGroup>
 </template>

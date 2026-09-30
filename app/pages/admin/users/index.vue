@@ -7,7 +7,7 @@
         </template>
 
         <template #right>
-          <UsersAddModal ref="usersAddModal" @submit="handleModalSubmit" />
+          <UsersAddModal ref="usersAddModal" @success="handleModalSuccess" />
         </template>
       </UDashboardNavbar>
     </template>
@@ -22,13 +22,14 @@
         />
 
         <div class="flex flex-wrap items-center gap-1.5">
-          <UsersDeleteModal :count="selectedCount" @confirm="handleBulkDelete">
+          <UsersDeleteModal ref="usersDeleteModal" :count="selectedCount" :name="bulkDeleteName" @confirm="handleConfirmDelete">
             <UButton
               v-if="selectedCount"
               label="Hapus"
               color="error"
               variant="subtle"
               icon="i-lucide-trash"
+              @click="bulkDeleteName = ''"
             >
               <template #trailing>
                 <UBadge color="error" variant="solid">{{ selectedCount }}</UBadge>
@@ -69,6 +70,7 @@
         :pagination-options="{
           getPaginationRowModel: getPaginationRowModel()
         }"
+        :get-row-id="(row: any) => String(row.id)"
         class="shrink-0"
         :data="users"
         :columns="columns"
@@ -124,12 +126,16 @@ const regions = ref<any[]>([])
 const loading = ref(false)
 
 const usersAddModal = ref<InstanceType<typeof UsersAddModal> | null>(null)
+const usersDeleteModal = useTemplateRef('usersDeleteModal')
 const table = useTemplateRef('table')
 
 const search = ref('')
 const roleFilter = ref('all')
 const statusFilter = ref('all')
 const rowSelection = ref<Record<string, boolean>>({})
+const deleteTarget = ref<any>(null)
+const bulkDeleteName = ref('')
+const deleting = ref(false)
 const pagination = ref({
   pageIndex: 0,
   pageSize: 10
@@ -249,7 +255,9 @@ const columns: TableColumn<any>[] = [
           icon: 'i-lucide-trash-2',
           color: 'error' as const,
           onSelect() {
-            handleModalDelete(row.original)
+            deleteTarget.value = row.original
+            bulkDeleteName.value = row.original.nama
+            usersDeleteModal.value?.open()
           }
         }
       ]
@@ -295,47 +303,35 @@ function openEdit(row: any) {
   usersAddModal.value?.openEdit(row)
 }
 
-async function handleModalSubmit({ data, editing }: any) {
+async function handleModalSuccess() {
+  await loadUsers()
+}
+
+async function handleConfirmDelete() {
+  usersDeleteModal.value?.setLoading(true)
   try {
-    if (editing) {
-      await $fetch(`/api/users/${editing.id}`, {
-        method: 'PUT',
-        body: data
-      })
-      toast.add({ color: 'success', title: 'Pengguna berhasil diperbarui' })
+    if (deleteTarget.value?.id) {
+      await $fetch(`/api/users/${deleteTarget.value.id}`, { method: 'DELETE' })
+      toast.add({ color: 'success', title: 'Pengguna berhasil dihapus' })
+      deleteTarget.value = null
+      bulkDeleteName.value = ''
     } else {
-      await $fetch('/api/users', {
-        method: 'POST',
-        body: data
-      })
-      toast.add({ color: 'success', title: 'Pengguna berhasil ditambahkan' })
+      const selectedIds = Object.keys(rowSelection.value).filter(key => rowSelection.value[key])
+      if (!selectedIds.length) {
+        usersDeleteModal.value?.close()
+        return
+      }
+      await Promise.all(selectedIds.map(id => $fetch(`/api/users/${id}`, { method: 'DELETE' })))
+      toast.add({ color: 'success', title: `${selectedIds.length} pengguna berhasil dihapus` })
+      rowSelection.value = {}
     }
-    usersAddModal.value?.close()
     await loadUsers()
-  } catch (e: any) {
-    toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan' })
-  }
-}
-
-async function handleModalDelete(user: any) {
-  try {
-    await $fetch(`/api/users/${user.id}`, { method: 'DELETE' })
-    toast.add({ color: 'success', title: 'Pengguna berhasil dihapus' })
-    await loadUsers()
+    usersDeleteModal.value?.close()
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menghapus' })
-  }
-}
-
-async function handleBulkDelete() {
-  try {
-    const selectedIds = Object.keys(rowSelection.value).filter(key => rowSelection.value[key])
-    await Promise.all(selectedIds.map(id => $fetch(`/api/users/${id}`, { method: 'DELETE' })))
-    toast.add({ color: 'success', title: `${selectedIds.length} pengguna berhasil dihapus` })
-    rowSelection.value = {}
-    await loadUsers()
-  } catch (e: any) {
-    toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menghapus' })
+  } finally {
+    usersDeleteModal.value?.setLoading(false)
+    deleting.value = false
   }
 }
 

@@ -99,3 +99,41 @@ export async function findOrCreateFolder(name: string, parentId?: string) {
   })
   return createRes.data.id as string
 }
+
+// --- OAuth2-based upload using user token ---
+export async function uploadToDriveOAuth(
+  fileName: string,
+  mimeType: string,
+  data: Buffer,
+  accessToken: string,
+  folderId?: string
+) {
+  const oAuth2Client = new google.auth.OAuth2()
+  oAuth2Client.setCredentials({ access_token: accessToken })
+
+  const drive = google.drive({ version: 'v3', auth: oAuth2Client })
+
+  const safeName = fileName.replace(/[\\/]/g, '-')
+  const fileMetadata: any = {
+    name: safeName,
+    parents: folderId ? [folderId] : undefined
+  }
+
+  const media = {
+    mimeType,
+    body: Buffer.from(data)
+  }
+
+  const res = await drive.files.create({
+    requestBody: fileMetadata,
+    media,
+    fields: 'id,name,mimeType,size'
+  })
+
+  return {
+    id: res.data.id,
+    nama: res.data.name,
+    tipe_mime: res.data.mimeType,
+    ukuran_bytes: Number(res.data.size || 0)
+  }
+}

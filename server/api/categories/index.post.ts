@@ -6,14 +6,13 @@ export default defineEventHandler(async (event) => {
   const body = await readValidatedBody(event, categoryCreateSchema.parse)
   const db = useDb()
 
-  const res = await db.execute({
+  await db.execute({
     sql: `INSERT INTO categories (nama, warna, icon) VALUES (?, ?, ?)`,
     args: [body.nama, body.warna || '#3B82F6', body.icon || null]
   })
 
   const newCategory = await db.execute({
-    sql: `SELECT id, nama, warna, icon, created_at FROM categories WHERE id = ?`,
-    args: [Number((res as any).meta?.last_row_id || (res as any).lastInsertRowId)]
+    sql: `SELECT id, nama, warna, icon, created_at FROM categories WHERE id = last_insert_rowid()`
   })
 
   return newCategory.rows[0] as any

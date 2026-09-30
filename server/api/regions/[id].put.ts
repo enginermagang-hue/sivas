@@ -1,4 +1,4 @@
-import { readValidatedBody } from 'h3'
+import { readValidatedBody, createError } from 'h3'
 import { useDb } from '../../utils/db'
 import { regionUpdateSchema } from '../../../lib/validations'
 
@@ -20,6 +20,7 @@ export default defineEventHandler(async (event) => {
 
   if (body.nama !== undefined) { updates.push('nama = ?'); args.push(body.nama) }
   if (body.kode !== undefined) { updates.push('kode = ?'); args.push(body.kode) }
+  if (body.status !== undefined) { updates.push('status = ?'); args.push(body.status) }
 
   if (updates.length === 0) {
     const res = await db.execute({
@@ -30,10 +31,18 @@ export default defineEventHandler(async (event) => {
   }
 
   args.push(id)
-  await db.execute({
-    sql: `UPDATE regions SET ${updates.join(', ')} WHERE id = ?`,
-    args
-  })
+  try {
+    await db.execute({
+      sql: `UPDATE regions SET ${updates.join(', ')} WHERE id = ?`,
+      args
+    })
+  } catch (e: any) {
+    const msg = (e?.message ?? '').toLowerCase()
+    if (msg.includes('unique') || msg.includes('constraint')) {
+      throw createError({ statusCode: 409, statusMessage: 'Kode wilayah sudah digunakan' })
+    }
+    throw createError({ statusCode: 500, statusMessage: 'Gagal memperbarui wilayah' })
+  }
 
   const res = await db.execute({
     sql: `SELECT id, nama, kode, created_at FROM regions WHERE id = ?`,

@@ -48,14 +48,13 @@ export default defineEventHandler(async (event) => {
 
   const uploaded = await uploadToDrive(fileName, mimeType, Buffer.from(fileField.data), folderId)
 
-  const res = await db.execute({
+  await db.execute({
     sql: `INSERT INTO activity_files (activity_id, nama_file, drive_file_id, url_file, tipe_mime, ukuran_bytes) VALUES (?, ?, ?, ?, ?, ?)`,
     args: [Number(activityId), uploaded.nama, uploaded.id, null, uploaded.tipe_mime, uploaded.ukuran_bytes]
   })
 
   const newFile = await db.execute({
-    sql: `SELECT id, activity_id, nama_file, drive_file_id, url_file, tipe_mime, ukuran_bytes, created_at FROM activity_files WHERE id = ?`,
-    args: [Number((res as any).meta?.last_row_id || (res as any).lastInsertRowId)]
+    sql: `SELECT id, activity_id, nama_file, drive_file_id, url_file, tipe_mime, ukuran_bytes, created_at FROM activity_files WHERE id = last_insert_rowid()`
   })
 
   return newFile.rows[0] as any

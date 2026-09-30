@@ -11,30 +11,22 @@ export default defineEventHandler(async (event) => {
     sql: `SELECT user_id, region_id FROM activities WHERE id = ? AND deleted_at IS NULL`,
     args: [body.activity_id]
   })
-  if (activity.rows.length === 0) {
+  const act = activity.rows[0] as any
+  if (!act) {
     throw createError({ statusCode: 404, statusMessage: 'Aktivitas tidak ditemukan' })
   }
-
-  const act = activity.rows[0] as any
   if (auth.role === 'koordinator' && act.region_id !== auth.regionId) {
-    throw createError({ statusCode: 403, statusMessage: 'Tidak diizinkan berkomentar pada aktivitas ini' })
-  }
-  if (auth.role === 'anggota' && act.user_id !== auth.userId) {
-    throw createError({ statusCode: 403, statusMessage: 'Tidak diizinkan berkomentar pada aktivitas ini' })
+    throw createError({ statusCode: 403, statusMessage: 'Tidak diizinkan mengomentari aktivitas luar wilayah' })
   }
 
-  const res = await db.execute({
+  await db.execute({
     sql: `INSERT INTO comments (activity_id, user_id, komentar) VALUES (?, ?, ?)`,
     args: [body.activity_id, auth.userId, body.komentar]
   })
 
-  const comment = await db.execute({
-    sql: `SELECT cm.id, cm.activity_id, cm.user_id, cm.komentar, cm.created_at, u.nama as user_nama
-           FROM comments cm
-           JOIN users u ON u.id = cm.user_id
-           WHERE cm.id = ?`,
-    args: [Number((res as any).meta?.last_row_id || (res as any).lastInsertRowId)]
+  const newComment = await db.execute({
+    sql: `SELECT id, activity_id, user_id, komentar, created_at FROM comments WHERE id = last_insert_rowid()`
   })
 
-  return comment.rows[0] as any
+  return newComment.rows[0] as any
 })

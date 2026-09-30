@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS regions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nama TEXT NOT NULL,
   kode TEXT UNIQUE NOT NULL,
+  status TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -180,6 +181,17 @@ export async function migrate() {
     await runSql(db, sql)
   }
   console.log('[migrate] schema done')
+
+  // Idempoten tambah kolom status pada regions (existing DB tanpa status)
+  try {
+    await runSql(db, `ALTER TABLE regions ADD COLUMN status TEXT DEFAULT 'active'`)
+    console.log('[migrate] added column status to regions')
+  } catch (e: any) {
+    const m = (e?.message ?? '').toLowerCase()
+    if (!m.includes('duplicate column') && !m.includes('already exists')) {
+      console.warn('[migrate] alter regions status skipped:', e?.message)
+    }
+  }
 
   console.log('[migrate] seeding...')
   await seedAdmin(db)

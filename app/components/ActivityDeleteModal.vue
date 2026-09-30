@@ -29,14 +29,14 @@ const displayText = computed(() => {
   if (props.name) {
     return `"${props.name}"`
   }
-  return `${props.count} wilayah terpilih`
+  return `${props.count} aktivitas terpilih`
 })
 
 const modalTitle = computed(() => {
   if (props.name) {
-    return `Hapus wilayah`
+    return `Hapus aktivitas`
   }
-  return `Hapus ${props.count} wilayah`
+  return `Hapus ${props.count} aktivitas`
 })
 
 function openModal() {

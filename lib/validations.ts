@@ -25,12 +25,14 @@ export const userUpdateSchema = z.object({
 
 export const regionCreateSchema = z.object({
   nama: z.string().min(1, 'Nama wilayah wajib diisi'),
-  kode: z.string().min(1, 'Kode wilayah wajib diisi')
+  kode: z.string().min(1, 'Kode wilayah wajib diisi'),
+  status: z.enum(['active', 'inactive']).default('active')
 })
 
 export const regionUpdateSchema = z.object({
   nama: z.string().min(1).optional(),
-  kode: z.string().min(1).optional()
+  kode: z.string().min(1).optional(),
+  status: z.enum(['active', 'inactive']).optional()
 })
 
 export const categoryCreateSchema = z.object({

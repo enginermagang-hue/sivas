@@ -36,6 +36,11 @@ export default defineNuxtConfig({
     // Google Drive
     googleDriveServiceAccount: '',
 
+    // Google OAuth2
+    googleOAuthClientId: '',
+    googleOAuthClientSecret: '',
+    googleRedirectUri: '',
+
     // App
     appUrl: process.env.NUXT_APP_URL || '',
     appName: process.env.NUXT_PUBLIC_APP_NAME || 'Aktivitas Harian',

@@ -7,7 +7,7 @@
         </template>
 
         <template #right>
-          <RegionsAddModal ref="regionsAddModal" @submit="handleModalSubmit" />
+          <RegionsAddModal ref="regionsAddModal" @success="loadRegions" />
         </template>
       </UDashboardNavbar>
     </template>
@@ -22,13 +22,14 @@
         />
 
         <div class="flex flex-wrap items-center gap-1.5">
-          <RegionsDeleteModal :count="selectedCount" @confirm="handleBulkDelete">
+          <RegionsDeleteModal ref="regionsDeleteModal" :count="selectedCount" :name="bulkDeleteName" @confirm="handleConfirmDelete">
             <UButton
-              v-if="selectedCount"
               label="Hapus"
               color="error"
               variant="subtle"
               icon="i-lucide-trash"
+              :disabled="!selectedCount"
+              @click="bulkDeleteName = ''"
             >
               <template #trailing>
                 <UBadge color="error" variant="solid">{{ selectedCount }}</UBadge>
@@ -45,6 +46,7 @@
         :pagination-options="{
           getPaginationRowModel: getPaginationRowModel()
         }"
+        :get-row-id="(row: any) => String(row.id)"
         class="shrink-0"
         :data="regions"
         :columns="columns"
@@ -98,7 +100,8 @@ if (user.value?.role !== 'admin') {
 const regions = ref<any[]>([])
 const loading = ref(false)
 
-const regionsAddModal = ref<InstanceType<typeof RegionsAddModal> | null>(null)
+const regionsAddModal = useTemplateRef('regionsAddModal')
+const regionsDeleteModal = useTemplateRef('regionsDeleteModal')
 const table = useTemplateRef('table')
 
 const search = ref('')
@@ -156,6 +159,17 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: any) => row.original.kode
   },
   {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }: any) => {
+      const color = row.original.status === 'active' ? 'success' : 'error'
+      return h(resolveComponent('UBadge'), {
+        color,
+        variant: 'soft'
+      }, () => row.original.status === 'active' ? 'Aktif' : 'Nonaktif')
+    }
+  },
+  {
     id: 'actions',
     cell: ({ row }: any) => {
       const items = [
@@ -171,7 +185,9 @@ const columns: TableColumn<any>[] = [
           icon: 'i-lucide-trash-2',
           color: 'error' as const,
           onSelect() {
-            handleModalDelete(row.original)
+            deleteTarget.value = row.original
+            bulkDeleteName.value = row.original.nama
+            regionsDeleteModal.value?.open()
           }
         }
       ]
@@ -212,47 +228,35 @@ function openEdit(row: any) {
   regionsAddModal.value?.openEdit(row)
 }
 
-async function handleModalSubmit({ data, editing }: any) {
+const deleteTarget = ref<any>(null)
+const bulkDeleteName = ref('')
+const deleting = ref(false)
+
+async function handleConfirmDelete() {
+  regionsDeleteModal.value?.setLoading(true)
   try {
-    if (editing) {
-      await $fetch(`/api/regions/${editing.id}`, {
-        method: 'PUT',
-        body: data
-      })
-      toast.add({ color: 'success', title: 'Wilayah berhasil diperbarui' })
+    if (deleteTarget.value?.id) {
+      await $fetch(`/api/regions/${deleteTarget.value.id}`, { method: 'DELETE' })
+      toast.add({ color: 'success', title: 'Wilayah berhasil dihapus' })
+      deleteTarget.value = null
+      bulkDeleteName.value = ''
     } else {
-      await $fetch('/api/regions', {
-        method: 'POST',
-        body: data
-      })
-      toast.add({ color: 'success', title: 'Wilayah berhasil ditambahkan' })
+      const selectedIds = Object.keys(rowSelection.value).filter(key => rowSelection.value[key])
+      if (!selectedIds.length) {
+        regionsDeleteModal.value?.close()
+        return
+      }
+      await Promise.all(selectedIds.map(id => $fetch(`/api/regions/${id}`, { method: 'DELETE' })))
+      toast.add({ color: 'success', title: `${selectedIds.length} wilayah berhasil dihapus` })
+      rowSelection.value = {}
     }
-    regionsAddModal.value?.close()
     await loadRegions()
-  } catch (e: any) {
-    toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan' })
-  }
-}
-
-async function handleModalDelete(region: any) {
-  try {
-    await $fetch(`/api/regions/${region.id}`, { method: 'DELETE' })
-    toast.add({ color: 'success', title: 'Wilayah berhasil dihapus' })
-    await loadRegions()
+    regionsDeleteModal.value?.close()
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menghapus' })
-  }
-}
-
-async function handleBulkDelete() {
-  try {
-    const selectedIds = Object.keys(rowSelection.value).filter(key => rowSelection.value[key])
-    await Promise.all(selectedIds.map(id => $fetch(`/api/regions/${id}`, { method: 'DELETE' })))
-    toast.add({ color: 'success', title: `${selectedIds.length} wilayah berhasil dihapus` })
-    rowSelection.value = {}
-    await loadRegions()
-  } catch (e: any) {
-    toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menghapus' })
+  } finally {
+    regionsDeleteModal.value?.setLoading(false)
+    deleting.value = false
   }
 }
 

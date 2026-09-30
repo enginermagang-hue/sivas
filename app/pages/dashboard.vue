@@ -4,11 +4,11 @@ const { user } = useAuth()
 watchEffect(() => {
   const role = user.value?.role
   if (role === 'admin') {
-    navigateTo('/admin/users')
+    navigateTo('/admin/dashboard')
   } else if (role === 'koordinator') {
     navigateTo('/koordinator/members')
   } else if (role === 'anggota') {
-    navigateTo('/anggota/activities')
+    navigateTo('/anggota/dashboard')
   } else if (role === 'kepala') {
     navigateTo('/kepala/dashboard')
   } else {
