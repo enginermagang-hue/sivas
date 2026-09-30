@@ -27,9 +27,9 @@
           <UFormField label="Wilayah">
             <USelect
               v-model="form.region_id"
-              :options="regions"
-              value-attribute="id"
-              option-attribute="nama"
+              :items="regions"
+              value-key="id"
+              label-key="nama"
               placeholder="Semua Wilayah"
               clearable
             />
@@ -37,9 +37,9 @@
           <UFormField label="Kategori">
             <USelect
               v-model="form.kategori_id"
-              :options="categories"
-              value-attribute="id"
-              option-attribute="nama"
+              :items="categories"
+              value-key="id"
+              label-key="nama"
               placeholder="Semua Kategori"
               clearable
             />

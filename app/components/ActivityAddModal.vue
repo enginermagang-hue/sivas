@@ -1,9 +1,10 @@
 <template>
-  <UModal v-model:open="open" :title="editing ? 'Edit Aktivitas' : 'Input Aktivitas'" :description="editing ? 'Perbarui detail aktivitas ini.' : 'Catat aktivitas harian Anda. Pilih kategori, tanggal, dan jelaskan kegiatan.'" :ui="{ footer: 'justify-end' }">
+  <UModal v-model:open="open" :title="editing ? 'Edit Aktivitas' : 'Input Aktivitas'" :description="editing ? 'Perbarui detail aktivitas ini.' : 'Catat aktivitas harian Anda. Pilih kategori, tanggal, dan jelaskan kegiatan.'">
     <UButton label="Input Aktivitas" icon="i-lucide-plus" color="primary" />
 
     <template #body>
       <ActivityForm
+        ref="activityFormRef"
         :activity="editing"
         :categories="categories"
         :maxSize="2097152"
@@ -11,11 +12,6 @@
         @cancel="open = false"
         @file-uploaded="handleFileUploaded"
       />
-    </template>
-
-    <template #footer>
-      <UButton type="button" variant="ghost" :disabled="saving" @click="open = false">Batal</UButton>
-      <UButton type="submit" form="activity-form" color="primary" :loading="saving" :disabled="saving">Simpan</UButton>
     </template>
   </UModal>
 </template>
@@ -29,7 +25,10 @@ const { user } = useAuth()
 const open = ref(false)
 const editing = ref<any>(null)
 const categories = ref<any[]>([])
-const saving = ref(false)
+const activityFormRef = ref<{
+  flushPendingFiles: (activityId: number) => Promise<{ uploaded: any[]; failed: File[] }>
+  setBusy: (value: boolean) => void
+} | null>(null)
 
 async function loadCategories() {
   try {
@@ -64,13 +63,13 @@ function handleFileUploaded(file: any) {
 }
 
 async function handleSubmit(form: any) {
-  saving.value = true
+  activityFormRef.value?.setBusy(true)
   try {
     if (editing.value) {
       await $fetch(`/api/activities/${editing.value.id}`, { method: 'PUT', body: form })
       toast.add({ color: 'success', title: 'Aktivitas berhasil diperbarui' })
     } else {
-      await $fetch('/api/activities', {
+      const created: any = await $fetch('/api/activities', {
         method: 'POST',
         body: {
           ...form,
@@ -78,7 +77,12 @@ async function handleSubmit(form: any) {
           region_id: user.value?.regionId
         }
       })
-      toast.add({ color: 'success', title: 'Aktivitas berhasil disimpan' })
+      const flush = await activityFormRef.value?.flushPendingFiles(Number(created.id))
+      if (flush && flush.failed.length > 0) {
+        toast.add({ color: 'warning', title: 'Aktivitas tersimpan, tetapi sebagian lampiran gagal diupload' })
+      } else {
+        toast.add({ color: 'success', title: 'Aktivitas berhasil disimpan' })
+      }
     }
     open.value = false
     editing.value = null
@@ -86,7 +90,7 @@ async function handleSubmit(form: any) {
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan aktivitas' })
   } finally {
-    saving.value = false
+    activityFormRef.value?.setBusy(false)
   }
 }
 

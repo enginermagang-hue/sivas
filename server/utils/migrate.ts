@@ -124,6 +124,16 @@ CREATE TABLE IF NOT EXISTS activity_log (
   ip_address TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS google_connections (
+  id INTEGER PRIMARY KEY CHECK(id = 1),
+  refresh_token TEXT NOT NULL,
+  email TEXT,
+  display_name TEXT,
+  scopes TEXT,
+  connected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME
+);
 `
 
 async function runSql(db: DB, sql: string, args?: any[]) {
@@ -203,6 +213,7 @@ export async function migrate() {
 export async function migrateFresh() {
   const db = createDb()
   const tables = [
+    'google_connections',
     'activity_log',
     'sessions',
     'sync_queue',

@@ -64,8 +64,8 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
 Pastikan kamu sudah punya ini di `runtimeConfig`:
 
 ```ts
-googleOAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
-googleOAuthClientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
+googleOauthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
+googleOauthClientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
 googleRedirectUri: process.env.GOOGLE_REDIRECT_URI || ''
 ```
 
@@ -82,8 +82,8 @@ import { google } from 'googleapis'
 export function getOAuthClient() {
   const config = useRuntimeConfig()
   return new google.auth.OAuth2(
-    config.googleOAuthClientId,
-    config.googleOAuthClientSecret,
+    config.googleOauthClientId,
+    config.googleOauthClientSecret,
     config.googleRedirectUri
   )
 }

@@ -18,13 +18,6 @@ logs
 .fleet
 .idea
 
-# Google Drive service account keys
-server/utils/gdrive-keys/*.json
-server/utils/gdrive-keys/!
-
-# Google OAuth2 client secret keys
-server/utils/oauth-keys/
-
 # Local env files
 .env
 .env.*

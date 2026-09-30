@@ -10,7 +10,8 @@
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
     "migrate": "npx tsx scripts/migrate.ts",
-    "migrate:fresh": "npx tsx scripts/migrate-fresh.ts"
+    "migrate:fresh": "npx tsx scripts/migrate-fresh.ts",
+    "test:drive": "npx tsx scripts/test-drive-upload.ts"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.137",

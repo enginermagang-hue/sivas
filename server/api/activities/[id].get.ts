@@ -29,5 +29,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Tidak diizinkan melihat aktivitas ini' })
   }
 
-  return activity
+  const filesRes = await db.execute({
+    sql: `SELECT id, activity_id, nama_file, drive_file_id, url_file, tipe_mime, ukuran_bytes, created_at
+          FROM activity_files
+          WHERE activity_id = ?
+          ORDER BY created_at ASC, id ASC`,
+    args: [id]
+  })
+
+  return {
+    ...activity,
+    files: filesRes.rows
+  }
 })

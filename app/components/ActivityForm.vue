@@ -11,8 +11,8 @@
         <USelect
           v-model="form.kategori_id"
           :items="categories"
-          value-attribute="id"
-          option-attribute="nama"
+          value-key="id"
+          label-key="nama"
           placeholder="Pilih kategori"
           :disabled="!!activity"
           class="w-full"
@@ -43,16 +43,23 @@
       <UFormField label="Lampiran" name="files" :description="activity && (activity.files?.length || 0) ? `${activity.files.length} file terhubung` : 'Maksimal 2MB per file'">
         <FileUpload
           v-if="activity"
+          ref="fileUploadRef"
           :activity-id="activity?.id"
           :max-size="maxSize"
           @uploaded="onFileUploaded"
         />
         <FileUpload
           v-else
+          ref="fileUploadRef"
           :max-size="maxSize"
           @uploaded="onFileUploaded"
         />
       </UFormField>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <UButton type="button" variant="ghost" :disabled="busy" @click="emit('cancel')">Batal</UButton>
+        <UButton type="submit" color="primary" :loading="busy" :disabled="busy">Simpan</UButton>
+      </div>
     </div>
   </UForm>
 </template>
@@ -68,6 +75,20 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['submit', 'cancel', 'file-uploaded'])
+
+const fileUploadRef = ref<{ flushPending: (activityId: number) => Promise<{ uploaded: any[]; failed: File[] }> } | null>(null)
+const busy = ref(false)
+
+function setBusy(value: boolean) {
+  busy.value = value
+}
+
+async function flushPendingFiles(activityId: number) {
+  if (!fileUploadRef.value) return { uploaded: [] as any[], failed: [] as File[] }
+  return fileUploadRef.value.flushPending(activityId)
+}
+
+defineExpose({ flushPendingFiles, setBusy })
 
 type Schema = typeof activityCreateSchema | typeof activityUpdateSchema
 

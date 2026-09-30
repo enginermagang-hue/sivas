@@ -33,12 +33,9 @@ export default defineNuxtConfig({
     sessionSecret: '',
     sessionMaxAge: 86400,
 
-    // Google Drive
-    googleDriveServiceAccount: '',
-
     // Google OAuth2
-    googleOAuthClientId: '',
-    googleOAuthClientSecret: '',
+    googleOauthClientId: '',
+    googleOauthClientSecret: '',
     googleRedirectUri: '',
 
     // App

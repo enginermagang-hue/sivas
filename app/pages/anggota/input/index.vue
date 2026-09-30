@@ -15,6 +15,7 @@
 
     <UCard>
       <ActivityForm
+        ref="activityFormRef"
         :categories="categories"
         @submit="handleSubmit"
         @cancel="navigateTo('/anggota/activities')"
@@ -32,6 +33,10 @@ definePageMeta({
 const { user } = useAuth()
 const toast = useToast()
 const categories = ref<any[]>([])
+const activityFormRef = ref<{
+  flushPendingFiles: (activityId: number) => Promise<{ uploaded: any[]; failed: File[] }>
+  setBusy: (value: boolean) => void
+} | null>(null)
 
 async function loadCategories() {
   const data = await $fetch('/api/categories')
@@ -39,8 +44,9 @@ async function loadCategories() {
 }
 
 async function handleSubmit(form: any) {
+  activityFormRef.value?.setBusy(true)
   try {
-    await $fetch('/api/activities', {
+    const created: any = await $fetch('/api/activities', {
       method: 'POST',
       body: {
         ...form,
@@ -48,10 +54,17 @@ async function handleSubmit(form: any) {
         region_id: user.value?.regionId
       }
     })
+    const flush = await activityFormRef.value?.flushPendingFiles(Number(created.id))
+    if (flush && flush.failed.length > 0) {
+      toast.add({ color: 'warning', title: 'Aktivitas tersimpan, tetapi sebagian lampiran gagal diupload' })
+      return
+    }
     toast.add({ color: 'success', title: 'Aktivitas berhasil disimpan' })
     await navigateTo('/anggota/activities')
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan aktivitas' })
+  } finally {
+    activityFormRef.value?.setBusy(false)
   }
 }
 

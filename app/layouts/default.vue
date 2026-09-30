@@ -16,7 +16,8 @@ const links = computed<NavigationMenuItem[][]>(() => {
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/admin/dashboard', onSelect: () => { open.value = false } },
       { label: 'Pengguna', icon: 'i-lucide-users', to: '/admin/users', onSelect: () => { open.value = false } },
       { label: 'Wilayah', icon: 'i-lucide-map', to: '/admin/regions', onSelect: () => { open.value = false } },
-      { label: 'Kategori', icon: 'i-lucide-tag', to: '/admin/categories', onSelect: () => { open.value = false } }
+      { label: 'Kategori', icon: 'i-lucide-tag', to: '/admin/categories', onSelect: () => { open.value = false } },
+      { label: 'Integrasi', icon: 'i-lucide-plug', to: '/admin/integrations', onSelect: () => { open.value = false } }
     )
   } else if (role === 'koordinator') {
     mainItems.push(
