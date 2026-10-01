@@ -50,7 +50,7 @@
       </UAlert>
 
       <template v-else-if="activity">
-        <UCard>
+        <UCard class="overflow-visible">
           <template #header>
             <div class="flex flex-wrap items-center gap-2">
               <span
@@ -71,6 +71,11 @@
             <div>
               <p class="text-xs font-medium text-muted mb-1">Wilayah</p>
               <p class="text-sm">{{ activity.region_nama }}</p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-muted mb-1">Sekolah</p>
+              <p class="text-sm">{{ activity.nama_sekolah || '-' }}</p>
+              <p v-if="activity.npsn" class="text-xs text-muted mt-0.5">NPSN: {{ activity.npsn }}</p>
             </div>
             <div>
               <p class="text-xs font-medium text-muted mb-1">Jam</p>
@@ -124,7 +129,7 @@
           </div>
         </UCard>
 
-        <UCard class="mt-6">
+        <UCard class="mt-6 overflow-visible">
           <template #header>
             <h3 class="text-base font-semibold">Komentar ({{ comments.length }})</h3>
           </template>
@@ -137,9 +142,14 @@
           <ul v-else class="space-y-3">
             <li v-for="c in comments" :key="c.id" class="rounded-lg bg-elevated/50 px-3 py-2">
               <div class="flex items-center justify-between gap-2">
-                <span class="text-xs font-medium">
-                  {{ c.user_id === user?.id ? 'Anda' : `Pengguna #${c.user_id}` }}
-                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium">
+                    {{ c.user_id === user?.id ? 'Anda' : (c.user_nama || `Pengguna #${c.user_id}`) }}
+                  </span>
+                  <UBadge v-if="c.user_role" size="xs" variant="subtle" :color="roleBadgeColor(c.user_role)">
+                    {{ ucwords(c.user_role) }}
+                  </UBadge>
+                </div>
                 <span class="text-xs text-muted">{{ formatDateTime(c.created_at) }}</span>
               </div>
               <p class="mt-1 text-sm whitespace-pre-wrap">{{ c.komentar }}</p>
@@ -237,7 +247,7 @@ const errorMessage = computed(() => {
 
 const canEdit = computed(() => {
   if (!activity.value || !user.value) return false
-  if (user.value.role === 'kepala' || user.value.role === 'admin') return true
+  if (user.value.role === 'admin') return true
   if (user.value.role === 'anggota') return activity.value.user_id === user.value.id
   if (user.value.role === 'koordinator') return activity.value.region_id === user.value.regionId
   return false
@@ -335,6 +345,29 @@ async function postComment() {
 function formatDate(dateStr: string) {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', weekday: 'short' })
+}
+
+function roleBadgeColor(role?: string) {
+  switch (role) {
+    case 'admin':
+      return 'error'
+    case 'kepala':
+      return 'info'
+    case 'koordinator':
+      return 'success'
+    case 'anggota':
+      return 'neutral'
+    default:
+      return 'neutral'
+  }
+}
+
+function ucwords(value?: string) {
+  if (!value) return ''
+  return String(value)
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }
 
 function formatDateTime(dateStr: string) {

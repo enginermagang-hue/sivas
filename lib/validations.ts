@@ -54,7 +54,9 @@ export const activityCreateSchema = z.object({
   tanggal: z.string().min(1, 'Tanggal wajib diisi'),
   jam_mulai: z.string().optional().nullable(),
   jam_selesai: z.string().optional().nullable(),
-  deskripsi: z.string().min(1, 'Deskripsi wajib diisi')
+  deskripsi: z.string().min(1, 'Deskripsi wajib diisi'),
+  npsn: z.string().trim().max(20).optional().nullable().or(z.literal('')),
+  nama_sekolah: z.string().trim().max(255).optional().nullable().or(z.literal(''))
 })
 
 export const activityUpdateSchema = z.object({
@@ -63,7 +65,9 @@ export const activityUpdateSchema = z.object({
   tanggal: z.string().min(1).optional(),
   jam_mulai: z.string().optional().nullable(),
   jam_selesai: z.string().optional().nullable(),
-  deskripsi: z.string().min(1).optional()
+  deskripsi: z.string().min(1).optional(),
+  npsn: z.string().trim().max(20).optional().nullable().or(z.literal('')),
+  nama_sekolah: z.string().trim().max(255).optional().nullable().or(z.literal(''))
 })
 
 export const commentCreateSchema = z.object({

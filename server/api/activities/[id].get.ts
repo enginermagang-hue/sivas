@@ -2,11 +2,15 @@ import { useDb } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   const id = Number(event.context.params?.id)
+  if (!Number.isFinite(id)) {
+    throw createError({ statusCode: 400, statusMessage: 'Parameter id tidak valid' })
+  }
+
   const db = useDb()
   const auth = event.context.auth as any
 
   const res = await db.execute({
-    sql: `SELECT a.id, a.user_id, a.region_id, a.kategori_id, a.tanggal, a.jam_mulai, a.jam_selesai, a.deskripsi, a.created_at,
+    sql: `SELECT a.id, a.user_id, a.region_id, a.kategori_id, a.tanggal, a.jam_mulai, a.jam_selesai, a.deskripsi, a.npsn, a.nama_sekolah, a.created_at,
                   u.nama as user_nama, u.role as user_role,
                   r.nama as region_nama,
                   c.nama as kategori_nama, c.warna as kategori_warna

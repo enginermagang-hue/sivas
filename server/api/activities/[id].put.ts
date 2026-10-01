@@ -33,6 +33,8 @@ export default defineEventHandler(async (event) => {
   if (body.jam_mulai !== undefined) { updates.push('jam_mulai = ?'); args.push(body.jam_mulai) }
   if (body.jam_selesai !== undefined) { updates.push('jam_selesai = ?'); args.push(body.jam_selesai) }
   if (body.deskripsi !== undefined) { updates.push('deskripsi = ?'); args.push(body.deskripsi) }
+  if (body.npsn !== undefined) { updates.push('npsn = ?'); args.push(body.npsn || null) }
+  if (body.nama_sekolah !== undefined) { updates.push('nama_sekolah = ?'); args.push(body.nama_sekolah || null) }
 
   if (updates.length > 0) {
     args.push(id)
@@ -43,7 +45,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const updated = await db.execute({
-    sql: `SELECT a.id, a.user_id, a.region_id, a.kategori_id, a.tanggal, a.jam_mulai, a.jam_selesai, a.deskripsi, a.created_at,
+    sql: `SELECT a.id, a.user_id, a.region_id, a.kategori_id, a.tanggal, a.jam_mulai, a.jam_selesai, a.deskripsi, a.npsn, a.nama_sekolah, a.created_at,
                   u.nama as user_nama, r.nama as region_nama, c.nama as kategori_nama
            FROM activities a
            JOIN users u ON u.id = a.user_id

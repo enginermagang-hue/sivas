@@ -7,6 +7,7 @@
         </template>
 
         <template #right>
+          <UButton icon="i-lucide-download" to="/anggota/export">Export</UButton>
           <ActivityAddModal ref="activityAddModal" @success="loadActivities" />
         </template>
       </UDashboardNavbar>
@@ -62,55 +63,147 @@
           />
         </div>
 
-        <ActivityDeleteModal ref="activityDeleteModal" :count="selectedCount" :name="bulkDeleteName" @confirm="handleConfirmDelete">
+        <div class="flex items-center gap-1">
           <UButton
-            v-if="selectedCount"
-            label="Hapus"
-            color="error"
-            variant="subtle"
-            icon="i-lucide-trash"
-            @click="bulkDeleteName = ''"
+            size="sm"
+            variant="ghost"
+            :color="viewMode === 'table' ? 'primary' : 'neutral'"
+            @click="viewMode = 'table'"
           >
-            <template #trailing>
-              <UBadge color="error" variant="solid">{{ selectedCount }}</UBadge>
-            </template>
+            <UIcon name="i-lucide-table" /> Tabel
           </UButton>
-        </ActivityDeleteModal>
+          <UButton
+            size="sm"
+            variant="ghost"
+            :color="viewMode === 'card' ? 'primary' : 'neutral'"
+            @click="viewMode = 'card'"
+          >
+            <UIcon name="i-lucide-layout" /> Card
+          </UButton>
+          <UButton
+            size="sm"
+            variant="ghost"
+            :color="viewMode === 'compact' ? 'primary' : 'neutral'"
+            @click="viewMode = 'compact'"
+          >
+            <UIcon name="i-lucide-list" /> Ringkas
+          </UButton>
+        </div>
       </div>
 
-      <UTable
-        ref="table"
-        v-model:row-selection="rowSelection"
-        v-model:pagination="pagination"
-        :pagination-options="{
-          getPaginationRowModel: getPaginationRowModel()
-        }"
-        :get-row-id="(row: any) => String(row.id)"
-        class="shrink-0"
-        :data="filteredActivities"
-        :columns="columns"
-        :loading="loading"
-        :ui="{
-          base: 'table-fixed border-separate border-spacing-0',
-          thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
-          tbody: '[&>tr]:last:[&>td]:border-b-0',
-          th: 'py-2 first:rounded-l-lg last:rounded-r-lg border-y border-default first:border-l last:border-r',
-          td: 'border-b border-default',
-          separator: 'h-0'
-        }"
-      />
+      <div v-if="viewMode === 'table'">
+        <UTable
+          ref="table"
+          v-model:row-selection="rowSelection"
+          v-model:pagination="pagination"
+          :pagination-options="{
+            getPaginationRowModel: getPaginationRowModel()
+          }"
+          :get-row-id="(row: any) => String(row.id)"
+          class="shrink-0"
+          :data="filteredActivities"
+          :columns="columns"
+          :loading="loading"
+          :ui="{
+            base: 'table-fixed border-separate border-spacing-0',
+            thead: '[&>tr]:bg-elevated/50 [&>tr]:after:content-none',
+            tbody: '[&>tr]:last:[&>td]:border-b-0',
+            th: 'py-2 first:rounded-l-lg last:rounded-r-lg border-y border-default first:border-l last:border-r',
+            td: 'border-b border-default',
+            separator: 'h-0'
+          }"
+        />
 
-      <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
-        <div class="text-sm text-muted">
-          {{ selectedCount }} dari {{ filteredActivities.length }} data terpilih.
+        <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
+          <div class="text-sm text-muted">
+            {{ selectedCount }} dari {{ filteredActivities.length }} data terpilih.
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <UPagination
+              :default-page="pagination.pageIndex + 1"
+              :items-per-page="pagination.pageSize"
+              :total="filteredActivities.length"
+              @update:page="(p: number) => table.tableApi.setPageIndex(p - 1)"
+            />
+          </div>
         </div>
+      </div>
 
-        <div class="flex items-center gap-1.5">
-          <UPagination
-            :default-page="pagination.pageIndex + 1"
-            :items-per-page="pagination.pageSize"
-            :total="filteredActivities.length"
-            @update:page="(p: number) => table.tableApi.setPageIndex(p - 1)"
+      <div v-else-if="viewMode === 'card'" class="space-y-4">
+        <UCard v-if="paginatedActivities.length === 0">
+          <p class="text-center text-gray-500 dark:text-gray-400 py-8">Tidak ada aktivitas</p>
+        </UCard>
+        <ActivityCard v-for="activity in paginatedActivities" :key="activity.id" :activity="activity" />
+        <div v-if="filteredActivities.length > listPageSize" class="flex items-center justify-center gap-1.5 pt-4">
+          <UButton
+            icon="i-lucide-chevron-left"
+            variant="ghost"
+            size="sm"
+            :disabled="listPage <= 1"
+            @click="listPage--"
+          />
+          <span class="text-sm text-muted">Halaman {{ listPage }} dari {{ Math.ceil(filteredActivities.length / listPageSize) }}</span>
+          <UButton
+            icon="i-lucide-chevron-right"
+            variant="ghost"
+            size="sm"
+            :disabled="listPage >= Math.ceil(filteredActivities.length / listPageSize)"
+            @click="listPage++"
+          />
+        </div>
+      </div>
+
+      <div v-else-if="viewMode === 'compact'" class="space-y-2">
+        <UCard v-if="paginatedActivities.length === 0">
+          <p class="text-center text-gray-500 dark:text-gray-400 py-8">Tidak ada aktivitas</p>
+        </UCard>
+        <div
+          v-for="activity in paginatedActivities"
+          :key="activity.id"
+          class="flex items-center justify-between gap-3 rounded-lg border border-default p-3 hover:bg-elevated/50 cursor-pointer"
+          @click="navigateTo(`/anggota/activities/${activity.id}`)"
+        >
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :style="{ backgroundColor: (activity.kategori_warna || '#ccc') + '20', color: activity.kategori_warna || '#666' }">
+                {{ activity.kategori_nama }}
+              </span>
+              <span class="text-xs text-muted">{{ formatDate(activity.tanggal) }}</span>
+              <span class="text-xs text-muted">{{ activity.region_nama }}</span>
+            </div>
+            <p class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ activity.deskripsi }}</p>
+          </div>
+          <div class="flex items-center gap-3 text-xs text-muted shrink-0">
+            <span v-if="activity.jam_mulai" class="flex items-center gap-1">
+              <UIcon name="i-lucide-clock" class="w-3 h-3" />
+              {{ activity.jam_mulai }}
+            </span>
+            <span v-if="activity.jam_selesai" class="flex items-center gap-1">
+              <UIcon name="i-lucide-clock" class="w-3 h-3" />
+              {{ activity.jam_selesai }}
+            </span>
+            <span class="flex items-center gap-1">
+              <UIcon name="i-lucide-paperclip" class="w-3 h-3" />
+              {{ activity.file_count || 0 }}
+            </span>
+          </div>
+        </div>
+        <div v-if="filteredActivities.length > listPageSize" class="flex items-center justify-center gap-1.5 pt-4">
+          <UButton
+            icon="i-lucide-chevron-left"
+            variant="ghost"
+            size="sm"
+            :disabled="listPage <= 1"
+            @click="listPage--"
+          />
+          <span class="text-sm text-muted">Halaman {{ listPage }} dari {{ Math.ceil(filteredActivities.length / listPageSize) }}</span>
+          <UButton
+            icon="i-lucide-chevron-right"
+            variant="ghost"
+            size="sm"
+            :disabled="listPage >= Math.ceil(filteredActivities.length / listPageSize)"
+            @click="listPage++"
           />
         </div>
       </div>
@@ -120,6 +213,7 @@
 
 <script setup lang="ts">
 import ActivityAddModal from '~/components/ActivityAddModal.vue'
+import ActivityCard from '~/components/ActivityCard.vue'
 import ActivityDeleteModal from '~/components/ActivityDeleteModal.vue'
 import { getPaginationRowModel } from '@tanstack/table-core'
 import type { TableColumn } from '@nuxt/ui'
@@ -139,6 +233,7 @@ const activities = ref<any[]>([])
 const categories = ref<any[]>([])
 const loading = ref(false)
 
+const viewMode = ref<'table' | 'card' | 'compact'>('table')
 const activityAddModal = useTemplateRef('activityAddModal')
 const activityDeleteModal = useTemplateRef('activityDeleteModal')
 const table = useTemplateRef('table')
@@ -155,6 +250,19 @@ const deleting = ref(false)
 const pagination = ref({
   pageIndex: 0,
   pageSize: 10
+})
+
+const listPage = ref(1)
+const listPageSize = computed(() => ({
+  table: 10,
+  card: 6,
+  compact: 10
+}[viewMode.value] as number))
+
+const paginatedActivities = computed(() => {
+  const start = (listPage.value - 1) * listPageSize.value
+  const end = start + listPageSize.value
+  return filteredActivities.value.slice(start, end)
 })
 
 const categoryFilterItems = computed(() => {
@@ -184,7 +292,9 @@ const filteredActivities = computed(() => {
       (a.deskripsi || '').toLowerCase().includes(q) ||
       (a.kategori_nama || '').toLowerCase().includes(q) ||
       (a.user_nama || '').toLowerCase().includes(q) ||
-      (a.region_nama || '').toLowerCase().includes(q)
+      (a.region_nama || '').toLowerCase().includes(q) ||
+      (a.nama_sekolah || '').toLowerCase().includes(q) ||
+      (a.npsn || '').toLowerCase().includes(q)
     )
   }
 
@@ -202,6 +312,10 @@ const filteredActivities = computed(() => {
   }
 
   return result
+})
+
+watch([filteredActivities, viewMode], () => {
+  listPage.value = 1
 })
 
 const selectedCount = computed(() => {
@@ -260,6 +374,18 @@ const columns: TableColumn<any>[] = [
       return h('div', { class: 'max-w-xs' }, [
         h('p', { class: 'truncate text-sm' }, a.deskripsi),
         h('p', { class: 'text-xs text-muted mt-0.5' }, `${a.user_nama} • ${a.region_nama}`)
+      ])
+    }
+  },
+  {
+    accessorKey: 'nama_sekolah',
+    header: 'Sekolah',
+    cell: ({ row }: any) => {
+      const a = row.original
+      if (!a.nama_sekolah && !a.npsn) return h('span', { class: 'text-sm text-muted' }, '-')
+      return h('div', { class: 'max-w-xs' }, [
+        h('p', { class: 'truncate text-sm' }, a.nama_sekolah || '-'),
+        a.npsn ? h('p', { class: 'text-xs text-muted mt-0.5' }, `NPSN: ${a.npsn}`) : null
       ])
     }
   },
@@ -325,7 +451,7 @@ const columns: TableColumn<any>[] = [
   }
 ]
 
-// Watch filters → reset to page 1
+// Watch filters -> reset to page 1
 watch([kategoriFilter, dateMode], () => {
   pagination.value.pageIndex = 0
 })

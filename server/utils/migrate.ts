@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS activities (
   jam_mulai TIME,
   jam_selesai TIME,
   deskripsi TEXT NOT NULL,
+  npsn TEXT NULL,
+  nama_sekolah TEXT NULL,
   deleted_at DATETIME NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -200,6 +202,19 @@ export async function migrate() {
     const m = (e?.message ?? '').toLowerCase()
     if (!m.includes('duplicate column') && !m.includes('already exists')) {
       console.warn('[migrate] alter regions status skipped:', e?.message)
+    }
+  }
+
+  // Idempoten tambah kolom npsn/nama_sekolah pada activities (existing DB)
+  for (const col of ['npsn TEXT NULL', 'nama_sekolah TEXT NULL']) {
+    try {
+      await runSql(db, `ALTER TABLE activities ADD COLUMN ${col}`)
+      console.log(`[migrate] added column ${col.split(' ')[0]} to activities`)
+    } catch (e: any) {
+      const m = (e?.message ?? '').toLowerCase()
+      if (!m.includes('duplicate column') && !m.includes('already exists')) {
+        console.warn('[migrate] alter activities skipped:', e?.message)
+      }
     }
   }
 

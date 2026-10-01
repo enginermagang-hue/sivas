@@ -3,6 +3,7 @@ import { useDb } from '../../utils/db'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
+  const auth = event.context.auth as any
   const db = useDb()
 
   let sql = `SELECT a.id, a.tanggal, u.nama as user_nama, r.nama as region_nama, c.nama as kategori_nama, a.jam_mulai, a.jam_selesai, a.deskripsi
@@ -12,6 +13,15 @@ export default defineEventHandler(async (event) => {
              JOIN categories c ON c.id = a.kategori_id
              WHERE a.deleted_at IS NULL`
   const args: any[] = []
+
+  // Role-based scoping
+  if (auth.role === 'koordinator') {
+    sql += ` AND a.region_id = ?`
+    args.push(auth.regionId)
+  } else if (auth.role === 'anggota') {
+    sql += ` AND a.user_id = ?`
+    args.push(auth.userId)
+  }
 
   if (body.tanggal_dari) {
     sql += ` AND a.tanggal >= ?`

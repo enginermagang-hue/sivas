@@ -28,9 +28,6 @@
           <UButton icon="i-lucide-activity" color="neutral" variant="ghost" size="sm" :to="`/koordinator/activities?user_id=${row.id}`">
             Aktivitas
           </UButton>
-          <UButton icon="i-lucide-plus-circle" color="primary" variant="ghost" size="sm" :to="`/koordinator/input?user_id=${row.id}`">
-            Input
-          </UButton>
         </template>
       </UTable>
     </UCard>

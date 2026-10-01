@@ -21,12 +21,12 @@ export default defineEventHandler(async (event) => {
   }
 
   await db.execute({
-    sql: `INSERT INTO activities (user_id, region_id, kategori_id, tanggal, jam_mulai, jam_selesai, deskripsi) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    args: [body.user_id, body.region_id, body.kategori_id, body.tanggal, body.jam_mulai || null, body.jam_selesai || null, body.deskripsi]
+    sql: `INSERT INTO activities (user_id, region_id, kategori_id, tanggal, jam_mulai, jam_selesai, deskripsi, npsn, nama_sekolah) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [body.user_id, body.region_id, body.kategori_id, body.tanggal, body.jam_mulai || null, body.jam_selesai || null, body.deskripsi, body.npsn || null, body.nama_sekolah || null]
   })
 
   const newActivity = await db.execute({
-    sql: `SELECT a.id, a.user_id, a.region_id, a.kategori_id, a.tanggal, a.jam_mulai, a.jam_selesai, a.deskripsi, a.created_at,
+    sql: `SELECT a.id, a.user_id, a.region_id, a.kategori_id, a.tanggal, a.jam_mulai, a.jam_selesai, a.deskripsi, a.npsn, a.nama_sekolah, a.created_at,
                   u.nama as user_nama, r.nama as region_nama, c.nama as kategori_nama
            FROM activities a
            JOIN users u ON u.id = a.user_id

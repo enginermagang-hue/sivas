@@ -24,7 +24,7 @@
       <UCard>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Aktivitas 7 Hari Terakhir</h3>
         <div class="h-64">
-          <Line v-if="chartData7Days.datasets.length" :data="chartData7Days" :options="chartOptions" />
+          <LineChart v-if="chartData7Days.datasets.length" :data="chartData7Days" :options="chartOptions" />
           <div v-else class="flex items-center justify-center h-full text-gray-500">Tidak ada data</div>
         </div>
       </UCard>
@@ -32,7 +32,7 @@
       <UCard>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Aktivitas per Wilayah</h3>
         <div class="h-64">
-          <Bar v-if="chartDataByRegion.datasets.length" :data="chartDataByRegion" :options="chartOptions" />
+          <BarChart v-if="chartDataByRegion.datasets.length" :data="chartDataByRegion" :options="chartOptions" />
           <div v-else class="flex items-center justify-center h-full text-gray-500">Tidak ada data</div>
         </div>
       </UCard>

@@ -21,14 +21,15 @@ const links = computed<NavigationMenuItem[][]>(() => {
     )
   } else if (role === 'koordinator') {
     mainItems.push(
-      { label: 'Anggota', icon: 'i-lucide-users', to: '/koordinator/members', onSelect: () => { open.value = false } },
+      { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/koordinator/dashboard', onSelect: () => { open.value = false } },
       { label: 'Aktivitas', icon: 'i-lucide-activity', to: '/koordinator/activities', onSelect: () => { open.value = false } },
-      { label: 'Input Aktivitas', icon: 'i-lucide-plus-circle', to: '/koordinator/input', onSelect: () => { open.value = false } }
+      { label: 'Export', icon: 'i-lucide-download', to: '/koordinator/export', onSelect: () => { open.value = false } }
     )
   } else if (role === 'anggota') {
     mainItems.push(
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/anggota/dashboard', onSelect: () => { open.value = false } },
-      { label: 'Aktivitas', icon: 'i-lucide-activity', to: '/anggota/activities', onSelect: () => { open.value = false } }
+      { label: 'Aktivitas', icon: 'i-lucide-activity', to: '/anggota/activities', onSelect: () => { open.value = false } },
+      { label: 'Export', icon: 'i-lucide-download', to: '/anggota/export', onSelect: () => { open.value = false } }
     )
   } else if (role === 'kepala') {
     mainItems.push(
