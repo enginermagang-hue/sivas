@@ -6,7 +6,7 @@ watchEffect(() => {
   if (role === 'admin') {
     navigateTo('/admin/dashboard')
   } else if (role === 'koordinator') {
-    navigateTo('/koordinator/members')
+    navigateTo('/koordinator/dashboard')
   } else if (role === 'anggota') {
     navigateTo('/anggota/dashboard')
   } else if (role === 'kepala') {

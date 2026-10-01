@@ -22,3 +22,9 @@ logs
 .env
 .env.*
 !.env.example
+
+# Secrets / credentials (Google Drive, OAuth, etc.)
+server/utils/gdrive-keys/
+server/utils/oauth-keys/
+*.service_account.json
+client_secret_*.json
