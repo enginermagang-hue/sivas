@@ -1,6 +1,6 @@
 <template>
-  <UModal v-model:open="open" :title="editing ? 'Edit Aktivitas' : 'Input Aktivitas'" :description="editing ? 'Perbarui detail aktivitas ini.' : 'Catat aktivitas harian Anda. Pilih kategori, tanggal, dan jelaskan kegiatan.'">
-    <UButton label="Input Aktivitas" icon="i-lucide-plus" color="primary" />
+  <UModal v-model:open="open" :title="editing ? 'Edit Aktivitas' : 'Input Aktivitas'" :description="editing ? 'Perbarui detail aktivitas ini.' : 'Catat aktivitas harian Anda. Pilih kategori, tanggal, dan jelaskan kegiatan.'" :ui="{ footer: 'justify-end' }">
+    <UButton v-if="!hideTrigger" label="Input Aktivitas" icon="i-lucide-plus" color="primary" />
 
     <template #body>
       <ActivityForm
@@ -8,10 +8,16 @@
         :activity="editing"
         :categories="categories"
         :maxSize="2097152"
+        :show-actions="false"
         @submit="handleSubmit"
         @cancel="open = false"
         @file-uploaded="handleFileUploaded"
       />
+    </template>
+
+    <template #footer>
+      <UButton type="button" variant="ghost" :disabled="busy" @click="open = false">Batal</UButton>
+      <UButton type="button" color="primary" :loading="busy" :disabled="busy" @click="activityFormRef?.submit()">Simpan</UButton>
     </template>
   </UModal>
 </template>
@@ -19,13 +25,17 @@
 <script setup lang="ts">
 import ActivityForm from '~/components/ActivityForm.vue'
 
+const props = withDefaults(defineProps<{ hideTrigger?: boolean }>(), { hideTrigger: false })
+
 const emit = defineEmits(['success'])
 const toast = useToast()
 const { user } = useAuth()
 const open = ref(false)
 const editing = ref<any>(null)
 const categories = ref<any[]>([])
+const busy = ref(false)
 const activityFormRef = ref<{
+  submit: () => void
   flushPendingFiles: (activityId: number) => Promise<{ uploaded: any[]; failed: File[] }>
   setBusy: (value: boolean) => void
 } | null>(null)
@@ -63,7 +73,7 @@ function handleFileUploaded(file: any) {
 }
 
 async function handleSubmit(form: any) {
-  activityFormRef.value?.setBusy(true)
+  busy.value = true
   try {
     if (editing.value) {
       await $fetch(`/api/activities/${editing.value.id}`, { method: 'PUT', body: form })
@@ -90,7 +100,7 @@ async function handleSubmit(form: any) {
   } catch (e: any) {
     toast.add({ color: 'error', title: e?.statusMessage || 'Gagal menyimpan aktivitas' })
   } finally {
-    activityFormRef.value?.setBusy(false)
+    busy.value = false
   }
 }
 

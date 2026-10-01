@@ -26,7 +26,7 @@
           </span>
         </div>
       </div>
-      <UButton icon="i-lucide-arrow-right" variant="ghost" size="sm" :to="`/activities/${activity.id}`" />
+      <UButton icon="i-lucide-arrow-right" variant="ghost" size="sm" :to="detailLink" />
     </div>
   </UCard>
 </template>
@@ -34,7 +34,10 @@
 <script setup lang="ts">
 const props = defineProps<{
   activity: any
-}>()
+}>
+
+const { user } = useAuth()
+const detailLink = computed(() => `/${user.value?.role || 'anggota'}/activities/${props.activity.id}`)()
 
 function formatDate(dateStr: string) {
   if (!dateStr) return ''

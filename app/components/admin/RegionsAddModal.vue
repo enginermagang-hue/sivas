@@ -4,6 +4,7 @@
 
     <template #body>
       <UForm
+        ref="formEl"
         id="region-form"
         :schema="schema"
         :state="state"
@@ -32,7 +33,7 @@
 
     <template #footer>
       <UButton type="button" variant="ghost" :disabled="saving" @click="open = false">Batal</UButton>
-      <UButton type="submit" form="region-form" :loading="saving" :disabled="saving">Simpan</UButton>
+      <UButton type="button" :loading="saving" :disabled="saving" @click="formEl?.submit()">Simpan</UButton>
     </template>
   </UModal>
 </template>
@@ -53,6 +54,7 @@ const toast = useToast()
 const open = ref(false)
 const editing = ref<any>(null)
 const saving = ref(false)
+const formEl = useTemplateRef('formEl')
 const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 type Schema = typeof regionCreateSchema | typeof regionUpdateSchema

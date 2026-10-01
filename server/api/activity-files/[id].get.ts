@@ -60,7 +60,9 @@ export default defineEventHandler(async (event) => {
   const downloadName = sanitizeDownloadName(String(file.nama_file || `file-${file.id}`))
   const mimeType = String(file.tipe_mime || content.mimeType || 'application/octet-stream')
   setResponseHeader(event, 'content-type', mimeType)
-  setResponseHeader(event, 'content-disposition', `attachment; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`)
+  const query = getQuery(event)
+  const disposition = query.inline === '1' || query.inline === 'true' ? 'inline' : 'attachment'
+  setResponseHeader(event, 'content-disposition', `${disposition}; filename="${downloadName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`)
   setResponseHeader(event, 'content-length', content.buffer.length)
   return content.buffer
 })

@@ -1,5 +1,6 @@
 <template>
   <UForm
+    ref="formEl"
     id="activity-form"
     :schema="schema"
     :state="form"
@@ -56,7 +57,7 @@
         />
       </UFormField>
 
-      <div class="flex justify-end gap-2 pt-2">
+      <div v-if="showActions !== false" class="flex justify-end gap-2 pt-2">
         <UButton type="button" variant="ghost" :disabled="busy" @click="emit('cancel')">Batal</UButton>
         <UButton type="submit" color="primary" :loading="busy" :disabled="busy">Simpan</UButton>
       </div>
@@ -72,12 +73,14 @@ const props = defineProps<{
   activity?: any
   categories: any[]
   maxSize?: number
+  showActions?: boolean
 }>()
 
 const emit = defineEmits(['submit', 'cancel', 'file-uploaded'])
 
 const fileUploadRef = ref<{ flushPending: (activityId: number) => Promise<{ uploaded: any[]; failed: File[] }> } | null>(null)
 const busy = ref(false)
+const formEl = useTemplateRef('formEl')
 
 function setBusy(value: boolean) {
   busy.value = value
@@ -88,12 +91,14 @@ async function flushPendingFiles(activityId: number) {
   return fileUploadRef.value.flushPending(activityId)
 }
 
-defineExpose({ flushPendingFiles, setBusy })
+defineExpose({ submit: () => formEl.value?.submit(), flushPendingFiles, setBusy })
 
 type Schema = typeof activityCreateSchema | typeof activityUpdateSchema
 
 const schema = computed(() =>
-  props.activity ? activityUpdateSchema : activityCreateSchema
+  // user_id & region_id diisi oleh parent saat submit (modal/page),
+  // jadi validasi client hanya mencakup field yang ada di form
+  props.activity ? activityUpdateSchema : activityCreateSchema.omit({ user_id: true, region_id: true })
 ) as any
 
 const form = reactive({

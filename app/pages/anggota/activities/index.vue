@@ -278,6 +278,13 @@ const columns: TableColumn<any>[] = [
     cell: ({ row }: any) => {
       const items = [
         {
+          label: 'Detail',
+          icon: 'i-lucide-eye',
+          onSelect() {
+            navigateTo(`/anggota/activities/${row.original.id}`)
+          }
+        },
+        {
           label: 'Edit',
           icon: 'i-lucide-pencil',
           onSelect() {

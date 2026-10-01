@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const comments = await db.execute({
-    sql: `SELECT id, activity_id, user_id, komentar, created_at FROM comments WHERE activity_id = ? AND deleted_at IS NULL ORDER BY created_at ASC`,
+    sql: `SELECT id, activity_id, user_id, komentar, created_at FROM comments WHERE activity_id = ? ORDER BY created_at ASC`,
     args: [activityId]
   })
 
