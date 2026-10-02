@@ -16,21 +16,56 @@
     </UCard>
 
     <div v-if="pendingFiles.length > 0" class="space-y-2">
-      <div v-for="(file, index) in pendingFiles" :key="`${file.name}-${file.size}-${file.lastModified}`" class="flex items-center justify-between p-3 rounded-lg border border-dashed border-amber-300 bg-amber-50 dark:bg-amber-950/30">
-        <div class="flex items-center gap-3">
-          <UIcon name="i-lucide-clock" class="w-5 h-5 text-amber-500" />
-          <div>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ file.name }}</p>
-            <p class="text-xs text-gray-500">Menunggu activity disimpan &middot; {{ formatSize(file.size) }}</p>
+      <div v-for="(file, index) in pendingFiles" :key="`${file.name}-${file.size}-${file.lastModified}`" class="flex flex-col gap-2 p-3 rounded-lg border border-dashed border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3 min-w-0">
+            <UIcon name="i-lucide-clock" class="w-5 h-5 shrink-0 text-amber-500" />
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ file.name }}</p>
+              <p class="text-xs text-gray-500">{{ formatSize(file.size) }}</p>
+            </div>
           </div>
+          <UButton
+            v-if="uploadProgress.has(getFileKey(file))"
+            icon="i-lucide-x"
+            color="error"
+            variant="ghost"
+            size="sm"
+            @click="cancelCurrentUpload()"
+          >
+            Batal
+          </UButton>
+          <UButton
+            v-else
+            icon="i-lucide-x"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            @click="removePending(index)"
+          />
         </div>
-        <UButton
-          icon="i-lucide-x"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          @click="removePending(index)"
-        />
+        <template v-if="uploadProgress.has(getFileKey(file))">
+          <UProgress :model-value="getProgress(file)" :max="100" size="sm" color="primary" class="w-full" />
+          <p class="text-xs text-muted">Mengunggah {{ getProgress(file) }}%</p>
+        </template>
+        <p v-else class="text-xs text-gray-500">Menunggu activity disimpan</p>
+      </div>
+    </div>
+
+    <div v-if="uploadingQueue.length > 0" class="space-y-2">
+      <div v-for="qf in uploadingQueue" :key="getFileKey(qf)" class="flex flex-col gap-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+        <div class="flex items-center justify-between">
+          <div class="flex min-w-0 items-center gap-3">
+            <UIcon name="i-lucide-loader-circle" class="w-5 h-5 shrink-0 animate-spin text-primary" />
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-gray-900 dark:text-white">{{ qf.name }}</p>
+              <p class="text-xs text-gray-500">{{ formatSize(qf.size) }}</p>
+            </div>
+          </div>
+          <UButton icon="i-lucide-x" color="error" variant="ghost" size="sm" @click="cancelCurrentUpload()">Batal</UButton>
+        </div>
+        <UProgress :model-value="getProgress(qf)" :max="100" size="sm" color="primary" class="w-full" />
+        <p class="text-xs text-muted">Mengunggah {{ getProgress(qf) }}%</p>
       </div>
     </div>
 
@@ -96,6 +131,24 @@ const success = ref('')
 const files = ref<any[]>([])
 const pendingFiles = ref<File[]>([])
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const uploadProgress = reactive(new Map<string, number>())
+const uploadingQueue = ref<File[]>([])
+let uploadXhr: XMLHttpRequest | null = null
+
+function getFileKey(file: File) {
+  return `${file.name}-${file.size}-${file.lastModified}`
+}
+function getProgress(file: File) {
+  return uploadProgress.get(getFileKey(file)) ?? 0
+}
+function cancelCurrentUpload() {
+  if (uploadXhr) uploadXhr.abort()
+}
+
+onBeforeUnmount(() => {
+  if (uploadXhr) uploadXhr.abort()
+  uploadProgress.clear()
+})
 
 function openPicker() {
   fileInputRef.value?.click()
@@ -138,16 +191,68 @@ function formatSize(bytes?: number) {
 }
 
 async function uploadOne(file: File, activityId: number) {
+  const key = getFileKey(file)
+  const isPending = pendingFiles.value.some(f => getFileKey(f) === key)
+  uploadProgress.set(key, 0)
+  if (!isPending && !uploadingQueue.value.some(f => getFileKey(f) === key)) uploadingQueue.value.push(file)
+
   const formData = new FormData()
   formData.append('file', file)
   formData.append('activity_id', String(activityId))
-  const uploaded = await $fetch('/api/upload', {
-    method: 'POST',
-    body: formData
-  })
-  files.value.push(uploaded)
-  emit('uploaded', uploaded)
-  return uploaded
+
+  try {
+    const uploaded: any = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      uploadXhr = xhr
+      xhr.open('POST', '/api/upload', true)
+      xhr.upload.onprogress = (e: ProgressEvent) => {
+        if (e.lengthComputable && e.total > 0) {
+          uploadProgress.set(key, Math.round((e.loaded / e.total) * 100))
+        }
+      }
+      xhr.onload = () => {
+        uploadXhr = null
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText))
+          } catch {
+            resolve(xhr.response)
+          }
+        } else {
+          let msg = xhr.statusText || `Gagal upload (${xhr.status})`
+          try {
+            const body = JSON.parse(xhr.responseText)
+            msg = body?.statusMessage || body?.message || msg
+          } catch {}
+          const err: any = new Error(msg)
+          err.statusCode = xhr.status
+          err.status = xhr.status
+          err.data = { statusMessage: msg }
+          reject(err)
+        }
+      }
+      xhr.onerror = () => {
+        uploadXhr = null
+        const err: any = new Error('Gagal upload file')
+        reject(err)
+      }
+      xhr.onabort = () => {
+        uploadXhr = null
+        const err: any = new Error('Upload dibatalkan')
+        err.aborted = true
+        reject(err)
+      }
+      xhr.send(formData)
+    })
+
+    uploadProgress.set(key, 100)
+    files.value.push(uploaded)
+    emit('uploaded', uploaded)
+    return uploaded
+  } finally {
+    uploadingQueue.value = uploadingQueue.value.filter(f => getFileKey(f) !== key)
+    uploadProgress.delete(key)
+  }
 }
 
 async function onFileChange(event: Event) {

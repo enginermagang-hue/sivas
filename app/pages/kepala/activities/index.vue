@@ -173,20 +173,12 @@
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :style="{ backgroundColor: (activity.kategori_warna || '#ccc') + '20', color: activity.kategori_warna || '#666' }">
                 {{ activity.kategori_nama }}
               </span>
-              <span class="text-xs text-muted">{{ formatDate(activity.tanggal) }}</span>
+              <span class="text-xs text-muted">{{ formatDate(activity.tanggal) }}<template v-if="activity.jam_mulai || activity.jam_selesai">, {{ [activity.jam_mulai, activity.jam_selesai].filter(Boolean).join(' - ') }}</template></span>
               <span class="text-xs text-muted">{{ activity.region_nama }}</span>
             </div>
             <p class="text-sm text-gray-700 dark:text-gray-300 truncate">{{ activity.deskripsi }}</p>
           </div>
           <div class="flex items-center gap-3 text-xs text-muted shrink-0">
-            <span v-if="activity.jam_mulai" class="flex items-center gap-1">
-              <UIcon name="i-lucide-clock" class="w-3 h-3" />
-              {{ activity.jam_mulai }}
-            </span>
-            <span v-if="activity.jam_selesai" class="flex items-center gap-1">
-              <UIcon name="i-lucide-clock" class="w-3 h-3" />
-              {{ activity.jam_selesai }}
-            </span>
             <span class="flex items-center gap-1">
               <UIcon name="i-lucide-paperclip" class="w-3 h-3" />
               {{ activity.file_count || 0 }}
@@ -327,7 +319,14 @@ const columns: TableColumn<any>[] = [
   {
     accessorKey: 'tanggal',
     header: 'Tanggal',
-    cell: ({ row }: any) => formatDate(row.original.tanggal)
+    cell: ({ row }: any) => {
+      const a = row.original
+      const time = [a.jam_mulai, a.jam_selesai].filter(Boolean).join(' - ')
+      return h('div', { class: 'text-sm leading-tight' }, [
+        h('div', formatDate(a.tanggal)),
+        time ? h('div', { class: 'text-xs text-muted' }, time) : null
+      ])
+    }
   },
   {
     accessorKey: 'kategori_nama',
@@ -367,19 +366,14 @@ const columns: TableColumn<any>[] = [
     }
   },
   {
-    accessorKey: 'jam_mulai',
-    header: 'Jam',
-    cell: ({ row }: any) => {
-      const a = row.original
-      const start = a.jam_mulai || ''
-      const end = a.jam_selesai || ''
-      return h('span', { class: 'text-sm' }, start ? `${start}${end ? ' - ' + end : ''}` : '-')
-    }
-  },
-  {
     accessorKey: 'region_nama',
     header: 'Wilayah',
     cell: ({ row }: any) => row.original.region_nama || '-'
+  },
+  {
+    accessorKey: 'file_count',
+    header: 'Lampiran',
+    cell: ({ row }: any) => h('span', { class: 'text-sm text-center' }, row.original.file_count ?? 0)
   },
   {
     id: 'actions',

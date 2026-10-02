@@ -98,7 +98,7 @@
                 <button
                   type="button"
                   class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left hover:underline"
-                  @click="previewFile = f"
+                  @click="loadPreview(f)"
                 >
                   <UIcon name="i-lucide-paperclip" class="w-4 h-4 shrink-0 text-muted" />
                   <span class="truncate text-sm">{{ f.nama_file }}</span>
@@ -109,7 +109,7 @@
                     icon="i-lucide-eye"
                     variant="ghost"
                     size="xs"
-                    @click="previewFile = f"
+                    @click="loadPreview(f)"
                   >
                     Preview
                   </UButton>
@@ -184,32 +184,71 @@
   <UModal
     v-model:open="previewOpen"
     :title="previewFile?.nama_file || 'Preview Lampiran'"
-    :ui="{ footer: 'justify-end' }"
+    :fullscreen="previewFullscreen"
+    :close="false"
+    :ui="{ footer: 'justify-end', body: previewFullscreen ? 'p-2 h-full overflow-hidden' : 'p-4 sm:p-6 h-[85vh] overflow-auto' }"
   >
-    <template #body>
-      <div class="flex items-center justify-center min-h-[200px]">
-        <img
-          v-if="previewKind === 'image'"
-          :src="previewUrl"
-          :alt="previewFile?.nama_file || 'Preview'"
-          class="max-h-[60vh] w-full rounded object-contain"
-        />
-        <embed
-          v-else-if="previewKind === 'pdf'"
-          :src="previewUrl"
-          type="application/pdf"
-          class="h-[70vh] w-full rounded"
-        />
-        <div v-else class="py-8 text-center text-muted">
-          <UIcon name="i-lucide-file-text" class="mx-auto mb-2 w-12 h-12" />
-          <p>Preview tidak tersedia untuk file ini.</p>
-          <p class="mt-1 text-xs">{{ previewFile?.nama_file }}</p>
+    <template #header>
+      <div class="flex items-center justify-between w-full gap-2">
+        <span class="truncate text-base font-semibold">{{ previewFile?.nama_file || 'Preview Lampiran' }}</span>
+        <div class="flex items-center gap-1 shrink-0">
+          <UButton
+            :icon="previewFullscreen ? 'i-lucide-minimize-2' : 'i-lucide-maximize-2'"
+            variant="ghost"
+            size="xs"
+            :aria-label="previewFullscreen ? 'Keluar fullscreen' : 'Fullscreen'"
+            @click="toggleFullscreen"
+          />
+          <UButton icon="i-lucide-x" variant="ghost" size="xs" aria-label="Tutup" @click="previewOpen = false" />
         </div>
       </div>
     </template>
 
+    <template #body>
+      <div class="flex items-center justify-center min-h-[200px] mx-auto w-full" :class="previewFullscreen ? 'max-w-full h-full' : 'max-w-5xl'">
+        <div v-if="previewLoading" class="flex w-full flex-col items-center gap-3 py-6">
+          <p class="text-sm text-muted">Memuat lampiran…</p>
+          <div class="flex items-center gap-3 w-full max-w-sm">
+            <UProgress
+              :model-value="previewProgress ?? 0"
+              :max="100"
+              size="sm"
+              color="primary"
+              class="flex-1"
+            />
+            <span class="text-xs font-medium text-muted whitespace-nowrap min-w-[3ch] text-right">{{ previewProgress === null ? '…' : `${previewProgress}%` }}</span>
+          </div>
+        </div>
+        <div v-else-if="previewError" class="py-8 text-center text-error">
+          <UIcon name="i-lucide-alert-circle" class="mx-auto mb-2 w-12 h-12 opacity-60" />
+          <p class="text-sm">Gagal memuat lampiran.</p>
+          <p class="mt-1 text-xs text-muted">{{ previewError }}</p>
+          <UButton class="mt-4" variant="outline" size="sm" @click="loadPreview(previewFile)">Coba lagi</UButton>
+        </div>
+        <template v-else>
+          <img
+            v-if="previewKind === 'image'"
+            :src="previewSrc"
+            :alt="previewFile?.nama_file || 'Preview'"
+            :class="previewFullscreen ? 'w-full h-full object-contain' : 'max-h-[72vh] w-full rounded object-contain'"
+          />
+          <embed
+            v-else-if="previewKind === 'pdf'"
+            :src="previewSrc"
+            type="application/pdf"
+            :class="previewFullscreen ? 'w-full h-full rounded' : 'h-[72vh] w-full rounded'"
+          />
+          <div v-else class="py-8 text-center text-muted">
+            <UIcon name="i-lucide-file-text" class="mx-auto mb-2 w-12 h-12" />
+            <p>Preview tidak tersedia untuk file ini.</p>
+            <p class="mt-1 text-xs">{{ previewFile?.nama_file }}</p>
+          </div>
+        </template>
+      </div>
+    </template>
+
     <template #footer>
-      <UButton variant="ghost" @click="previewFile = null">Tutup</UButton>
+      <UButton variant="ghost" @click="previewOpen = false">Tutup</UButton>
       <UButton
         icon="i-lucide-download"
         :href="fileDownloadUrl(previewFile)"
@@ -259,9 +298,112 @@ const editModal = useTemplateRef('editModal')
 const deleteModal = useTemplateRef('deleteModal')
 
 const previewFile = ref<any>(null)
+const previewSrc = ref('')
+const previewLoading = ref(false)
+const previewProgress = ref<number | null>(null)
+const previewError = ref('')
+const previewFullscreen = ref(false)
+let previewXhr: XMLHttpRequest | null = null
+let previewObjectUrl: string | null = null
+
+function toggleFullscreen() {
+  previewFullscreen.value = !previewFullscreen.value
+}
+
+function cleanupPreviewObjectUrl() {
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl)
+    previewObjectUrl = null
+  }
+}
+
+function resetPreviewState() {
+  if (previewXhr) {
+    previewXhr.abort()
+    previewXhr = null
+  }
+  cleanupPreviewObjectUrl()
+  previewSrc.value = ''
+  previewLoading.value = false
+  previewProgress.value = null
+  previewError.value = ''
+}
+
 const previewOpen = computed({
   get: () => previewFile.value !== null,
-  set: (v: boolean) => { if (!v) previewFile.value = null }
+  set: (v: boolean) => {
+    if (!v) {
+      resetPreviewState()
+      previewFile.value = null
+    }
+  }
+})
+
+function loadPreview(f: any) {
+  if (previewXhr) {
+    previewXhr.abort()
+    previewXhr = null
+  }
+  cleanupPreviewObjectUrl()
+  previewFile.value = f
+  previewError.value = ''
+  previewProgress.value = null
+  previewSrc.value = ''
+
+  if (!isImageFile(f) && !isPdfFile(f)) {
+    previewLoading.value = false
+    return
+  }
+
+  previewLoading.value = true
+  const url = `/api/activity-files/${f.id}?inline=1`
+  const xhr = new XMLHttpRequest()
+  previewXhr = xhr
+  xhr.open('GET', url, true)
+  xhr.responseType = 'blob'
+  xhr.onprogress = (e: ProgressEvent) => {
+    if (e.lengthComputable && e.total > 0) {
+      previewProgress.value = Math.round((e.loaded / e.total) * 100)
+    } else {
+      previewProgress.value = null
+    }
+  }
+  xhr.onload = () => {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      const blob = xhr.response as Blob
+      const mime = xhr.getResponseHeader('content-type') || String(f.tipe_mime || f.mime_type || '')
+      const typedBlob = blob.type ? blob : new Blob([blob], { type: mime || (isImageFile(f) ? 'image/*' : 'application/pdf') })
+      const objectUrl = URL.createObjectURL(typedBlob)
+      previewObjectUrl = objectUrl
+      previewSrc.value = objectUrl
+      previewProgress.value = 100
+    } else {
+      previewError.value = `Gagal memuat lampiran (${xhr.status})`
+    }
+    previewLoading.value = false
+    previewXhr = null
+  }
+  xhr.onerror = () => {
+    if (previewFile.value === f) {
+      previewError.value = 'Gagal memuat lampiran'
+    }
+    previewLoading.value = false
+    previewXhr = null
+  }
+  xhr.onabort = () => {
+    previewLoading.value = false
+    previewXhr = null
+  }
+  xhr.send()
+}
+
+watch(previewOpen, (isOpen) => {
+  if (!isOpen) previewFullscreen.value = false
+})
+
+onBeforeUnmount(() => {
+  if (previewXhr) previewXhr.abort()
+  cleanupPreviewObjectUrl()
 })
 
 function isImageFile(f: any) {

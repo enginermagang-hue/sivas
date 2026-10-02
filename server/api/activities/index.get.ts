@@ -8,7 +8,8 @@ export default defineEventHandler(async (event) => {
   let sql = `SELECT a.id, a.user_id, a.region_id, a.kategori_id, a.tanggal, a.jam_mulai, a.jam_selesai, a.deskripsi, a.npsn, a.nama_sekolah, a.created_at,
                     u.nama as user_nama, u.role as user_role,
                     r.nama as region_nama,
-                    c.nama as kategori_nama, c.warna as kategori_warna
+                    c.nama as kategori_nama, c.warna as kategori_warna,
+                    (SELECT COUNT(*) FROM activity_files af WHERE af.activity_id = a.id) as file_count
              FROM activities a
              JOIN users u ON u.id = a.user_id
              JOIN regions r ON r.id = a.region_id
@@ -102,6 +103,7 @@ export default defineEventHandler(async (event) => {
     deskripsi: r.deskripsi,
     npsn: r.npsn,
     nama_sekolah: r.nama_sekolah,
-    created_at: r.created_at
+    created_at: r.created_at,
+    file_count: Number(r.file_count ?? 0)
   }))
 })
