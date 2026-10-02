@@ -34,24 +34,16 @@ const links = computed<NavigationMenuItem[][]>(() => {
   } else if (role === 'kepala') {
     mainItems.push(
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/kepala/dashboard', onSelect: () => { open.value = false } },
-      { label: 'Aktivitas', icon: 'i-lucide-activity', to: '/kepala/activities', onSelect: () => { open.value = false } },
-      { label: 'Export', icon: 'i-lucide-download', to: '/kepala/export', onSelect: () => { open.value = false } }
+      { label: 'Aktivitas', icon: 'i-lucide-activity', to: '/kepala/activities', onSelect: () => { open.value = false } }
     )
   }
 
+  // ponytail: Help & Support eksternal dihapus; Feedback internal /feedback untuk masukan user
   const secondaryItems: NavigationMenuItem[] = [
     {
       label: 'Feedback',
       icon: 'i-lucide-message-circle',
-      to: 'https://github.com/nuxt-ui-templates/dashboard',
-      target: '_blank',
-      onSelect: () => { open.value = false }
-    },
-    {
-      label: 'Help & Support',
-      icon: 'i-lucide-info',
-      to: 'https://github.com/nuxt-ui-templates/dashboard',
-      target: '_blank',
+      to: '/feedback',
       onSelect: () => { open.value = false }
     }
   ]
@@ -134,12 +126,13 @@ onMounted(async () => {
           popover
         />
 
+        <NotificationBellButton :collapsed="collapsed" class="mt-auto" />
+
         <UNavigationMenu
           :collapsed="collapsed"
           :items="links[1]"
           orientation="vertical"
           tooltip
-          class="mt-auto"
         />
       </template>
 

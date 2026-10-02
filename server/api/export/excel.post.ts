@@ -6,6 +6,10 @@ export default defineEventHandler(async (event) => {
   const auth = event.context.auth as any
   const db = useDb()
 
+  if (auth.role === 'kepala') {
+    throw createError({ statusCode: 403, statusMessage: 'Kepala tidak dapat melakukan export' })
+  }
+
   let sql = `SELECT a.id, a.tanggal, u.nama as user_nama, r.nama as region_nama, c.nama as kategori_nama, a.jam_mulai, a.jam_selesai, a.deskripsi
              FROM activities a
              JOIN users u ON u.id = a.user_id
@@ -14,13 +18,23 @@ export default defineEventHandler(async (event) => {
              WHERE a.deleted_at IS NULL`
   const args: any[] = []
 
-  // Role-based scoping
-  if (auth.role === 'koordinator') {
-    sql += ` AND a.region_id = ?`
-    args.push(auth.regionId)
-  } else if (auth.role === 'anggota') {
+  // Role-based scoping: anggota = own only; koordinator = scope-controlled within region
+  if (auth.role === 'anggota') {
     sql += ` AND a.user_id = ?`
     args.push(auth.userId)
+  } else if (auth.role === 'koordinator') {
+    const scope = String(body.scope || 'wilayah')
+    const anggotaId = body.anggota_id ? Number(body.anggota_id) : (body.user_id ? Number(body.user_id) : undefined)
+    if (scope === 'self') {
+      sql += ` AND a.user_id = ?`
+      args.push(auth.userId)
+    } else if (scope === 'anggota' && anggotaId) {
+      sql += ` AND a.user_id = ? AND a.region_id = ?`
+      args.push(anggotaId, auth.regionId)
+    } else {
+      sql += ` AND a.region_id = ?`
+      args.push(auth.regionId)
+    }
   }
 
   if (body.tanggal_dari) {
@@ -31,7 +45,8 @@ export default defineEventHandler(async (event) => {
     sql += ` AND a.tanggal <= ?`
     args.push(body.tanggal_sampai)
   }
-  if (body.region_id) {
+  // region_id: ignore for anggota/koordinator (already scoped); only admin/kepala could use
+  if (auth.role !== 'anggota' && auth.role !== 'koordinator' && body.region_id) {
     sql += ` AND a.region_id = ?`
     args.push(Number(body.region_id))
   }

@@ -212,6 +212,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, getLocalDateString } from '~/utils/date'
 import ActivityAddModal from '~/components/ActivityAddModal.vue'
 import ActivityCard from '~/components/ActivityCard.vue'
 import ActivityDeleteModal from '~/components/ActivityDeleteModal.vue'
@@ -303,7 +304,7 @@ const filteredActivities = computed(() => {
   }
 
   if (dateMode.value === 'today') {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getLocalDateString()
     result = result.filter((a: any) => a.tanggal === today)
   } else if (dateMode.value === 'day' && dateDay.value) {
     result = result.filter((a: any) => a.tanggal === dateDay.value)
@@ -321,12 +322,6 @@ watch([filteredActivities, viewMode], () => {
 const selectedCount = computed(() => {
   return Object.values(rowSelection.value).filter(Boolean).length
 })
-
-function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', weekday: 'short' })
-}
 
 const columns: TableColumn<any>[] = [
   {

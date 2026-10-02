@@ -31,6 +31,8 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime } from '~/utils/date'
+
 const { user } = useAuth()
 const toast = useToast()
 const notifications = ref<any[]>([])
@@ -61,9 +63,7 @@ async function markAllAsRead(close: () => void) {
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return formatDateTime(dateStr) || ''
 }
 
 onMounted(() => {

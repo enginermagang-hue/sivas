@@ -23,18 +23,33 @@ export async function createSession(userId: number, ip: string, ua: string) {
 export async function getSessionUser(token: string | undefined) {
   if (!token) return null
   const db = useDb()
-  const res = await db.execute({
-    sql: `SELECT s.*, u.id as uid, u.nama, u.email, u.role, u.status, u.region_id
+  let res: any
+  try {
+    res = await db.execute({
+      sql: `SELECT s.*, u.id as uid, u.nama, u.email, u.role, u.status, u.region_id, u.avatar, u.google_avatar
           FROM sessions s JOIN users u ON u.id = s.user_id
           WHERE s.token = ? AND s.revoked = 0 AND s.expires_at > datetime('now') AND u.deleted_at IS NULL`,
-    args: [token]
-  })
+      args: [token]
+    })
+  } catch (e: any) {
+    // ponytail: DB existing belum di-migrate (avatar column missing) → fallback tanpa avatar agar auth tidak crash
+    if (/no such column/i.test(String(e?.message || '')) && /avatar/i.test(String(e?.message || ''))) {
+      res = await db.execute({
+        sql: `SELECT s.*, u.id as uid, u.nama, u.email, u.role, u.status, u.region_id, u.google_avatar
+          FROM sessions s JOIN users u ON u.id = s.user_id
+          WHERE s.token = ? AND s.revoked = 0 AND s.expires_at > datetime('now') AND u.deleted_at IS NULL`,
+        args: [token]
+      })
+    } else throw e
+  }
   if (res.rows.length === 0) return null
   const row = res.rows[0] as any
   await db.execute({
     sql: `UPDATE sessions SET last_active = datetime('now') WHERE token = ?`,
     args: [token]
   })
+  const avatarVal = (row as any).avatar ?? null
+  const googleAvatarVal = (row as any).google_avatar ?? null
   return {
     sessionId: row.id,
     userId: row.uid,
@@ -42,7 +57,9 @@ export async function getSessionUser(token: string | undefined) {
     email: row.email,
     role: row.role,
     status: row.status,
-    regionId: row.region_id
+    regionId: row.region_id,
+    avatar: avatarVal,
+    googleAvatar: googleAvatarVal
   }
 }
 

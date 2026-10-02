@@ -225,6 +225,7 @@
 <script setup lang="ts">
 import ActivityAddModal from '~/components/ActivityAddModal.vue'
 import ActivityDeleteModal from '~/components/ActivityDeleteModal.vue'
+import { formatDate, formatDateTime } from '~/utils/date'
 
 const props = defineProps<{ backTo: string }>()
 
@@ -249,7 +250,7 @@ const canEdit = computed(() => {
   if (!activity.value || !user.value) return false
   if (user.value.role === 'admin') return true
   if (user.value.role === 'anggota') return activity.value.user_id === user.value.id
-  if (user.value.role === 'koordinator') return activity.value.region_id === user.value.regionId
+  if (user.value.role === 'koordinator') return activity.value.user_id === user.value.id
   return false
 })
 const canDelete = computed(() => canEdit.value)
@@ -342,11 +343,6 @@ async function postComment() {
   }
 }
 
-function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', weekday: 'short' })
-}
-
 function roleBadgeColor(role?: string) {
   switch (role) {
     case 'admin':
@@ -368,11 +364,6 @@ function ucwords(value?: string) {
     .split(' ')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
-}
-
-function formatDateTime(dateStr: string) {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
 function formatJam(mulai?: string | null, selesai?: string | null) {

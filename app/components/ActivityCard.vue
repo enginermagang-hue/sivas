@@ -38,6 +38,7 @@
 <script lang="ts">
 import { defineComponent, computed, type PropType } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { formatDate } from '~/utils/date'
 
 export default defineComponent({
   props: {
@@ -52,12 +53,6 @@ export default defineComponent({
       const role = user.value?.role || 'anggota'
       return `/${role}/activities/${props.activity.id}`
     })
-
-    function formatDate(dateStr: string) {
-      if (!dateStr) return ''
-      const date = new Date(dateStr)
-      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-    }
 
     return { detailLink, formatDate }
   }

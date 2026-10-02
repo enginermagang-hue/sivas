@@ -1,4 +1,5 @@
 import { useDb } from '../../utils/db'
+import { notifyActivityCreated } from '../../utils/notifications'
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as any
@@ -17,6 +18,24 @@ export default defineEventHandler(async (event) => {
           sql: `INSERT INTO activities (user_id, region_id, kategori_id, tanggal, jam_mulai, jam_selesai, deskripsi) VALUES (?, ?, ?, ?, ?, ?, ?)`,
           args: [payload.user_id, payload.region_id, payload.kategori_id, payload.tanggal, payload.jam_mulai || null, payload.jam_selesai || null, payload.deskripsi]
         })
+        // notify koordinator/kepala for offline-created activity
+        try {
+          const last = await db.execute({ sql: `SELECT id FROM activities WHERE rowid = last_insert_rowid()` })
+          const newId = (last.rows[0] as any)?.id
+          if (newId) {
+            const authorId = Number(payload.user_id || auth.userId)
+            const authorName = String(auth.nama || 'Seseorang')
+            const authorRole = String(auth.role || 'anggota')
+            await notifyActivityCreated(db, {
+              activityId: Number(newId),
+              authorId,
+              authorName,
+              authorRole,
+              regionId: Number(payload.region_id),
+              deskripsi: String(payload.deskripsi || '')
+            })
+          }
+        } catch {}
         synced++
       } else if (item.entity === 'activities' && item.action === 'update') {
         const payload = item.payload
@@ -37,7 +56,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const ids = items.map(i => i.id)
+  const ids = items.map((i: any) => i.id)
   if (ids.length > 0) {
     await db.execute({
       sql: `UPDATE sync_queue SET status = 'synced', synced_at = datetime('now') WHERE id IN (${ids.map(() => '?').join(',')})`,

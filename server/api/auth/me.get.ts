@@ -10,7 +10,9 @@ export default defineEventHandler(async (event) => {
       nama: auth.nama,
       email: auth.email,
       role: auth.role,
-      regionId: auth.regionId
+      regionId: auth.regionId,
+      avatar: (auth as any).avatar ?? null,
+      googleAvatar: (auth as any).googleAvatar ?? null
     }
   }
 })

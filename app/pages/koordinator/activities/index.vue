@@ -26,7 +26,7 @@
           <USelect
             v-model="anggotaFilter"
             :items="memberFilterItems"
-            placeholder="Semua Anggota"
+            placeholder="Semua Pelapor"
             clearable
             class="w-48"
           />
@@ -220,6 +220,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, getLocalDateString } from '~/utils/date'
 import ActivityAddModal from '~/components/ActivityAddModal.vue'
 import ActivityCard from '~/components/ActivityCard.vue'
 import ActivityDeleteModal from '~/components/ActivityDeleteModal.vue'
@@ -276,7 +277,10 @@ const paginatedActivities = computed(() => {
 })
 
 const memberFilterItems = computed(() => {
-  const items = [{ label: 'Semua Anggota', value: undefined }]
+  const items: Array<{ label: string; value: number | undefined }> = [{ label: 'Semua Pelapor', value: undefined }]
+  if (user.value?.id) {
+    items.push({ label: `Aktivitas Saya${user.value.nama ? ` — ${user.value.nama}` : ''}`, value: Number(user.value.id) })
+  }
   for (const m of members.value) {
     items.push({ label: m.nama, value: Number(m.id) })
   }
@@ -325,7 +329,7 @@ const filteredActivities = computed(() => {
   }
 
   if (dateMode.value === 'today') {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getLocalDateString()
     result = result.filter((a: any) => a.tanggal === today)
   } else if (dateMode.value === 'day' && dateDay.value) {
     result = result.filter((a: any) => a.tanggal === dateDay.value)
@@ -344,30 +348,34 @@ const selectedCount = computed(() => {
   return Object.values(rowSelection.value).filter(Boolean).length
 })
 
-function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', weekday: 'short' })
-}
-
 const columns: TableColumn<any>[] = [
   {
     id: 'select',
-    header: ({ table: t }: any) =>
-      h(resolveComponent('UCheckbox'), {
-        modelValue: t.getIsSomePageRowsSelected()
-          ? 'indeterminate'
-          : t.getIsAllPageRowsSelected(),
-        'onUpdate:modelValue': (value: boolean | 'indeterminate') =>
-          t.toggleAllPageRowsSelected(!!value),
-        ariaLabel: 'Select all'
-      }),
-    cell: ({ row }: any) =>
-      h(resolveComponent('UCheckbox'), {
+    header: ({ table: t }: any) => {
+      const rows = (t.getRowModel().rows as any[])
+      const ownedRows = rows.filter((r: any) => Number(r.original.user_id) === Number(user.value?.id))
+      const ownedSelected = ownedRows.filter((r: any) => r.getIsSelected()).length
+      const allOwnedSelected = ownedRows.length > 0 && ownedSelected === ownedRows.length
+      const someOwnedSelected = ownedSelected > 0 && ownedSelected < ownedRows.length
+      return h(resolveComponent('UCheckbox'), {
+        modelValue: someOwnedSelected ? 'indeterminate' : allOwnedSelected,
+        'onUpdate:modelValue': (value: boolean | 'indeterminate') => {
+          const shouldSelect = !!value
+          for (const r of ownedRows) r.toggleSelected(shouldSelect)
+        },
+        ariaLabel: 'Select all',
+        disabled: ownedRows.length === 0
+      })
+    },
+    cell: ({ row }: any) => {
+      const isOwner = Number(row.original.user_id) === Number(user.value?.id)
+      if (!isOwner) return h('span', { class: 'inline-block w-4' })
+      return h(resolveComponent('UCheckbox'), {
         modelValue: row.getIsSelected(),
         'onUpdate:modelValue': (value: boolean | 'indeterminate') => row.toggleSelected(!!value),
         ariaLabel: 'Select row'
       })
+    }
   },
   {
     accessorKey: 'tanggal',
@@ -424,32 +432,37 @@ const columns: TableColumn<any>[] = [
   {
     id: 'actions',
     cell: ({ row }: any) => {
-      const items = [
+      const isOwner = Number(row.original.user_id) === Number(user.value?.id)
+      const items: any[] = [
         {
           label: 'Detail',
           icon: 'i-lucide-eye',
           onSelect() {
             navigateTo(`/koordinator/activities/${row.original.id}`)
           }
-        },
-        {
-          label: 'Edit',
-          icon: 'i-lucide-pencil',
-          onSelect() {
-            activityAddModal.value?.openEdit(row.original)
-          }
-        },
-        {
-          label: 'Hapus',
-          icon: 'i-lucide-trash-2',
-          color: 'error' as const,
-          onSelect() {
-            deleteTarget.value = row.original
-            bulkDeleteName.value = row.original.deskripsi || 'aktivitas ini'
-            activityDeleteModal.value?.open()
-          }
         }
       ]
+      if (isOwner) {
+        items.push(
+          {
+            label: 'Edit',
+            icon: 'i-lucide-pencil',
+            onSelect() {
+              activityAddModal.value?.openEdit(row.original)
+            }
+          },
+          {
+            label: 'Hapus',
+            icon: 'i-lucide-trash-2',
+            color: 'error' as const,
+            onSelect() {
+              deleteTarget.value = row.original
+              bulkDeleteName.value = row.original.deskripsi || 'aktivitas ini'
+              activityDeleteModal.value?.open()
+            }
+          }
+        )
+      }
 
       return h(
         'div',

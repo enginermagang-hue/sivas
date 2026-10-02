@@ -15,8 +15,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const activity = existing.rows[0] as any
-  if (auth.role === 'koordinator' && activity.region_id !== auth.regionId) {
-    throw createError({ statusCode: 403, statusMessage: 'Tidak diizinkan menghapus aktivitas ini' })
+  if (auth.role === 'koordinator' && activity.user_id !== auth.userId) {
+    throw createError({ statusCode: 403, statusMessage: 'Koordinator hanya dapat menghapus aktivitas miliknya sendiri' })
   }
   if (auth.role === 'anggota' && activity.user_id !== auth.userId) {
     throw createError({ statusCode: 403, statusMessage: 'Tidak diizinkan menghapus aktivitas ini' })

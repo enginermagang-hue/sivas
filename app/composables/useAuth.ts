@@ -37,5 +37,23 @@ export const useAuth = () => {
     }
   }
 
-  return { user, loaded, loggingOut, fetchMe, login, logout }
+  function googleLogin() {
+    if (typeof window === 'undefined') {
+      window.location.assign('/api/auth/google/login')
+      return
+    }
+    const w = 520
+    const h = 640
+    const left = window.screenX + (window.outerWidth - w) / 2
+    const top = window.screenY + (window.outerHeight - h) / 2
+    const url = '/api/auth/google/login?popup=1'
+    const popup = window.open(url, 'googleLogin', `width=${w},height=${h},left=${left},top=${top},popup=1`)
+    if (!popup) {
+      window.location.assign('/api/auth/google/login')
+      return
+    }
+    popup.focus()
+  }
+
+  return { user, loaded, loggingOut, fetchMe, login, logout, googleLogin }
 }

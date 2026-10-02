@@ -42,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import { getLocalDateString } from '~/utils/date'
 definePageMeta({
   layout: 'default'
 })
@@ -77,7 +78,7 @@ async function loadStats() {
   const [users, regions, activitiesToday, activitiesMonth] = await Promise.all([
     $fetch('/api/users'),
     $fetch('/api/regions'),
-    $fetch('/api/activities?tanggal=' + new Date().toISOString().split('T')[0]),
+    $fetch('/api/activities?tanggal=' + getLocalDateString()),
     $fetch('/api/activities')
   ])
 
@@ -102,7 +103,7 @@ async function loadStats() {
     const date = new Date()
     const parts = label.split(' ')
     date.setDate(date.getDate() - (6 - labels7Days.indexOf(label)))
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = getLocalDateString(date)
     return activitiesMonth.filter((a: any) => a.tanggal === dateStr).length
   })
 

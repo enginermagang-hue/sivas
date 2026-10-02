@@ -79,6 +79,8 @@
 </template>
 
 <script setup lang="ts">
+import { parseDate } from '~/utils/date'
+
 definePageMeta({ layout: 'default' })
 
 const route = useRoute()
@@ -105,7 +107,8 @@ const statusColor = computed(() => {
 
 const connectedSince = computed(() => {
   if (!status.value?.connectedAt) return ''
-  return new Date(status.value.connectedAt).toLocaleDateString('id-ID', {
+  const d = parseDate(String(status.value.connectedAt))
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
     year: 'numeric'

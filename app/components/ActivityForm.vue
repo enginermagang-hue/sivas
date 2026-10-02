@@ -79,6 +79,7 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { activityCreateSchema, activityUpdateSchema } from '../../../lib/validations'
+import { getLocalDateString } from '~/utils/date'
 
 const props = defineProps<{
   activity?: any
@@ -116,7 +117,7 @@ const form = reactive({
   user_id: undefined as number | undefined,
   region_id: undefined as number | undefined,
   kategori_id: undefined as number | undefined,
-  tanggal: new Date().toISOString().split('T')[0],
+  tanggal: getLocalDateString(),
   jam_mulai: null as string | null,
   jam_selesai: null as string | null,
   npsn: null as string | null,
@@ -173,7 +174,7 @@ watch(
         user_id: undefined,
         region_id: undefined,
         kategori_id: undefined,
-        tanggal: new Date().toISOString().split('T')[0],
+        tanggal: getLocalDateString(),
         jam_mulai: null,
         jam_selesai: null,
         npsn: null,

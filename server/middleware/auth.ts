@@ -2,9 +2,11 @@ import { getCookie } from 'h3'
 import { SESSION_COOKIE, getSessionUser } from '../utils/session'
 
 export default defineEventHandler(async (event) => {
-  const path = event.path
+  const rawPath = event.path
+  const path = rawPath.split('?')[0]
   if (!path.startsWith('/api/')) return
   if (path === '/api/auth/login') return
+  if (path.startsWith('/api/auth/google')) return
   if (path === '/api/panduan' || path.startsWith('/api/panduan')) return
   if (path.startsWith('/api/whatsapp/webhook')) return
 

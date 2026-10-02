@@ -37,6 +37,7 @@ export default defineNuxtConfig({
     googleOauthClientId: '',
     googleOauthClientSecret: '',
     googleRedirectUri: '',
+    googleLoginRedirectUri: '',
 
     // App
     appUrl: process.env.NUXT_APP_URL || '',

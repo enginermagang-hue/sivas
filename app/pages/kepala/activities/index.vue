@@ -6,9 +6,7 @@
           <UDashboardSidebarCollapse />
         </template>
 
-        <template #right>
-          <UButton icon="i-lucide-download" to="/kepala/export">Export</UButton>
-        </template>
+
       </UDashboardNavbar>
     </template>
 
@@ -218,6 +216,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, getLocalDateString } from '~/utils/date'
 import ActivityCard from '~/components/ActivityCard.vue'
 import { getPaginationRowModel } from '@tanstack/table-core'
 import type { TableColumn } from '@nuxt/ui'
@@ -309,7 +308,7 @@ const filteredActivities = computed(() => {
   }
 
   if (dateMode.value === 'today') {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getLocalDateString()
     result = result.filter((a: any) => a.tanggal === today)
   } else if (dateMode.value === 'day' && dateDay.value) {
     result = result.filter((a: any) => a.tanggal === dateDay.value)
@@ -323,12 +322,6 @@ const filteredActivities = computed(() => {
 watch([filteredActivities, viewMode], () => {
   listPage.value = 1
 })
-
-function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', weekday: 'short' })
-}
 
 const columns: TableColumn<any>[] = [
   {

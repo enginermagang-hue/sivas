@@ -52,6 +52,8 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime } from '~/utils/date'
+
 const props = defineProps<{
   activityId: number
 }>()
@@ -76,9 +78,7 @@ async function loadComments() {
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return formatDateTime(dateStr) || ''
 }
 
 async function handleSubmit() {

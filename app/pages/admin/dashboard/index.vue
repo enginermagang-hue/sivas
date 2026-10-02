@@ -93,6 +93,7 @@
 </template>
 
 <script setup lang="ts">
+import { getLocalDateString, formatDate } from '~/utils/date'
 import { ref, reactive, onMounted, computed } from 'vue'
 
 definePageMeta({
@@ -157,7 +158,7 @@ async function loadData() {
   stats.totalUsers = users.value.length
   stats.totalRegions = regions.value.length
   stats.totalCategories = categories.value.length
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDateString()
   stats.todayActivities = activities.value.filter((a: any) => a.tanggal === today).length
 
   // Chart: 7-day trend
@@ -166,7 +167,7 @@ async function loadData() {
   for (let i = 6; i >= 0; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
-    const dateStr = d.toISOString().split('T')[0]
+    const dateStr = getLocalDateString(d)
     labels.push(d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' }))
     const count = activities.value.filter((a: any) => a.tanggal === dateStr).length
     data.push(count)
@@ -224,10 +225,7 @@ const regionSummary = computed(() => {
   })
 })
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })
-}
+
 
 function categoryColor(hex?: string) {
   const colors: Record<string, string> = {

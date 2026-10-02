@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL CHECK(role IN ('admin','koordinator','anggota','kepala')),
   region_id INTEGER NULL REFERENCES regions(id),
   status TEXT DEFAULT 'active' CHECK(status IN ('active','inactive')),
+  google_id TEXT UNIQUE,
+  google_avatar TEXT,
+  avatar TEXT,
   last_login DATETIME,
   deleted_at DATETIME NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -136,6 +139,16 @@ CREATE TABLE IF NOT EXISTS google_connections (
   connected_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME
 );
+
+CREATE TABLE IF NOT EXISTS feedbacks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  kategori TEXT NOT NULL DEFAULT 'saran' CHECK(kategori IN ('saran','bug','pertanyaan','lainnya')),
+  pesan TEXT NOT NULL,
+  rating INTEGER NULL CHECK(rating IS NULL OR (rating >= 1 AND rating <= 5)),
+  status TEXT NOT NULL DEFAULT 'unread' CHECK(status IN ('unread','read','resolved')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 `
 
 async function runSql(db: DB, sql: string, args?: any[]) {
@@ -218,6 +231,24 @@ export async function migrate() {
     }
   }
 
+  // Idempoten tambah kolom google_id/avatar pada users (existing DB)
+  for (const col of ['google_id TEXT', 'google_avatar TEXT', 'avatar TEXT']) {
+    try {
+      await runSql(db, `ALTER TABLE users ADD COLUMN ${col}`)
+      console.log(`[migrate] added column ${col.split(' ')[0]} to users`)
+    } catch (e: any) {
+      const m = (e?.message ?? '').toLowerCase()
+      if (!m.includes('duplicate column') && !m.includes('already exists')) {
+        console.warn('[migrate] alter users skipped:', e?.message)
+      }
+    }
+  }
+  try {
+    await runSql(db, `CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)`)
+  } catch (e: any) {
+    console.warn('[migrate] create idx_users_google_id skipped:', e?.message)
+  }
+
   console.log('[migrate] seeding...')
   await seedAdmin(db)
   await seedRegions(db)
@@ -228,6 +259,7 @@ export async function migrate() {
 export async function migrateFresh() {
   const db = createDb()
   const tables = [
+    'feedbacks',
     'google_connections',
     'activity_log',
     'sessions',

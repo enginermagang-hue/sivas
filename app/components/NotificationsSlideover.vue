@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { formatTimeAgo } from '@vueuse/core'
+import { parseDate } from '~/utils/date'
 
+const { user } = useAuth()
 const { isNotificationsSlideoverOpen } = useDashboard()
 
 const { data: notifications, refresh } = await useFetch<any[]>('/api/notifications', {
   lazy: false,
-  default: () => []
+  default: () => [],
+  watch: [isNotificationsSlideoverOpen]
+})
+
+watch(isNotificationsSlideoverOpen, (open) => {
+  if (open) refresh()
 })
 
 async function markAllAsRead() {
@@ -16,6 +23,25 @@ async function markAllAsRead() {
     console.error('Failed to mark notifications as read', e)
   }
 }
+
+function onNotificationClick(n: any) {
+  isNotificationsSlideoverOpen.value = false
+  const id = n?.entity_id
+  if (!id) return
+  const role = user.value?.role
+  if (role === 'anggota') navigateTo(`/anggota/activities/${id}`)
+  else if (role === 'koordinator') navigateTo(`/koordinator/activities/${id}`)
+  else if (role === 'kepala') navigateTo(`/kepala/activities/${id}`)
+  else if (role === 'admin') navigateTo(`/kepala/activities/${id}`)
+}
+
+let poll: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  poll = setInterval(() => { void refresh() }, 30000)
+})
+onBeforeUnmount(() => {
+  if (poll) clearInterval(poll)
+})
 </script>
 
 <template>
@@ -43,8 +69,8 @@ async function markAllAsRead() {
       <NuxtLink
         v-for="notification in notifications"
         :key="notification.id"
-        class="px-3 py-2.5 rounded-md hover:bg-elevated/50 flex items-start gap-3 relative -mx-3 first:-mt-3 last:-mb-3"
-        @click="isNotificationsSlideoverOpen = false"
+        class="px-3 py-2.5 rounded-md hover:bg-elevated/50 flex items-start gap-3 relative -mx-3 first:-mt-3 last:-mb-3 cursor-pointer"
+        @click="onNotificationClick(notification)"
       >
         <UChip
           color="error"
@@ -65,7 +91,7 @@ async function markAllAsRead() {
             <time
               :datetime="notification.created_at"
               class="text-muted text-xs"
-              v-text="formatTimeAgo(new Date(notification.created_at))"
+              v-text="formatTimeAgo(parseDate(notification.created_at))"
             />
           </p>
           <p class="text-dimmed">

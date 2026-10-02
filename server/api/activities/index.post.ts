@@ -1,6 +1,7 @@
 import { readValidatedBody } from 'h3'
 import { useDb } from '../../utils/db'
 import { activityCreateSchema } from '../../../lib/validations'
+import { notifyActivityCreated } from '../../utils/notifications'
 
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as any
@@ -35,5 +36,18 @@ export default defineEventHandler(async (event) => {
            WHERE a.id = last_insert_rowid()`
   })
 
-  return newActivity.rows[0] as any
+  const row = newActivity.rows[0] as any
+  // ponytail: notify is fire-and-forget; errors are swallowed so activity insert always succeeds
+  try {
+    await notifyActivityCreated(db, {
+      activityId: row.id,
+      authorId: Number(auth.userId),
+      authorName: String(auth.nama || row.user_nama || 'Seseorang'),
+      authorRole: String(auth.role || ''),
+      regionId: Number(row.region_id),
+      deskripsi: String(row.deskripsi || '')
+    })
+  } catch {}
+
+  return row
 })

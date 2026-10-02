@@ -74,3 +74,31 @@ export const commentCreateSchema = z.object({
   activity_id: z.coerce.number().int().positive(),
   komentar: z.string().min(1, 'Komentar wajib diisi')
 })
+
+export const profileUpdateSchema = z.object({
+  nama: z.string().trim().min(1, 'Nama wajib diisi').max(100).optional(),
+  email: z.string().trim().email('Email tidak valid').optional(),
+  // avatar: URL https:// atau data:image/...;base64 (ponytail: simpan base64 langsung di DB agar tanpa Drive/bucket; ganti ke object storage saat >100KB/sering)
+  avatar: z.string().trim().max(700000).optional().nullable().or(z.literal('')),
+  current_password: z.string().optional().nullable().or(z.literal('')),
+  password: z.string().min(6, 'Password minimal 6 karakter').optional().nullable().or(z.literal('')),
+  password_confirm: z.string().optional().nullable().or(z.literal(''))
+}).refine((d) => {
+  const wantsPw = !!(d.password && String(d.password).trim() !== '')
+  if (wantsPw && (!d.current_password || String(d.current_password).trim() === '')) return false
+  return true
+}, { message: 'Password saat ini wajib diisi', path: ['current_password'] }).refine((d) => {
+  const wantsPw = !!(d.password && String(d.password).trim() !== '')
+  if (wantsPw && d.password !== d.password_confirm) return false
+  return true
+}, { message: 'Konfirmasi password tidak cocok', path: ['password_confirm'] })
+
+export const feedbackCreateSchema = z.object({
+  kategori: z.enum(['saran', 'bug', 'pertanyaan', 'lainnya']).default('saran'),
+  pesan: z.string().trim().min(3, 'Pesan minimal 3 karakter').max(2000, 'Pesan maksimal 2000 karakter'),
+  rating: z.coerce.number().int().min(1).max(5).optional().nullable()
+})
+
+export const feedbackStatusSchema = z.object({
+  status: z.enum(['unread', 'read', 'resolved'])
+})

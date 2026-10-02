@@ -70,6 +70,7 @@
 </template>
 
 <script setup lang="ts">
+import { getLocalDateString } from '~/utils/date'
 import { ref, reactive, onMounted, computed } from 'vue'
 import ActivityCard from '~/components/ActivityCard.vue'
 import ActivityAddModal from '~/components/ActivityAddModal.vue'
@@ -123,7 +124,7 @@ async function loadDashboard() {
     activities.value = []
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDateString()
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 6)
 
@@ -145,7 +146,7 @@ async function loadDashboard() {
   for (let i = 6; i >= 0; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
-    const dateStr = d.toISOString().split('T')[0]
+    const dateStr = getLocalDateString(d)
     labels.push(d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' }))
     const count = activities.value.filter((a: any) => a.tanggal === dateStr).length
     data.push(count)

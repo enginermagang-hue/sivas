@@ -7,16 +7,20 @@ defineProps<{
 
 const { user, logout } = useAuth()
 const colorMode = useColorMode()
-const appConfig = useAppConfig()
 const toast = useToast()
 
-const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
-const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'taupe', 'mauve', 'mist', 'olive']
+function avatarSrc(): string {
+  const a = (user.value as any)?.avatar
+  const g = (user.value as any)?.googleAvatar
+  if (a && String(a).trim()) return String(a)
+  if (g && String(g).trim()) return String(g)
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.value?.nama || 'User')}&background=random`
+}
 
 const userData = computed(() => ({
-  name: user.value?.nama || 'User',
+  label: user.value?.nama || 'User',
   avatar: {
-    src: `https://ui-avatars.com/api/?name=${encodeURIComponent(user.value?.nama || 'User')}&background=random`,
+    src: avatarSrc(),
     alt: user.value?.nama || 'User'
   }
 }))
@@ -24,49 +28,14 @@ const userData = computed(() => ({
 const items = computed<DropdownMenuItem[][]>(() => {
   const userItem: DropdownMenuItem = {
     type: 'label',
-    label: userData.value.name,
+    label: userData.value.label,
     avatar: userData.value.avatar
   }
 
-  const themeItem: DropdownMenuItem = {
-    label: 'Theme',
-    icon: 'i-lucide-palette',
-    children: [
-      {
-        label: 'Primary',
-        slot: 'chip',
-        chip: appConfig.ui.colors.primary,
-        content: { align: 'center', collisionPadding: 16 },
-        children: colors.map(color => ({
-          label: color,
-          chip: color,
-          slot: 'chip',
-          checked: appConfig.ui.colors.primary === color,
-          type: 'checkbox',
-          onSelect: (e: Event) => {
-            e.preventDefault()
-            appConfig.ui.colors.primary = color
-          }
-        }))
-      },
-      {
-        label: 'Neutral',
-        slot: 'chip',
-        chip: appConfig.ui.colors.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.colors.neutral,
-        content: { align: 'end', collisionPadding: 16 },
-        children: neutrals.map(color => ({
-          label: color,
-          chip: color === 'neutral' ? 'old-neutral' : color,
-          slot: 'chip',
-          type: 'checkbox',
-          checked: appConfig.ui.colors.neutral === color,
-          onSelect: (e: Event) => {
-            e.preventDefault()
-            appConfig.ui.colors.neutral = color
-          }
-        }))
-      }
-    ]
+  const profileItem: DropdownMenuItem = {
+    label: 'Profil',
+    icon: 'i-lucide-user',
+    to: '/profile'
   }
 
   const appearanceItem: DropdownMenuItem = {
@@ -100,44 +69,6 @@ const items = computed<DropdownMenuItem[][]>(() => {
     ]
   }
 
-  const templatesItem: DropdownMenuItem = {
-    label: 'Templates',
-    icon: 'i-lucide-layout-template',
-    children: [
-      { label: 'Starter', to: 'https://starter-template.nuxt.dev/' },
-      { label: 'Landing', to: 'https://landing-template.nuxt.dev/' },
-      { label: 'Docs', to: 'https://docs-template.nuxt.dev/' },
-      { label: 'SaaS', to: 'https://saas-template.nuxt.dev/' },
-      { label: 'Dashboard', to: 'https://dashboard-template.nuxt.dev/', color: 'primary', checked: true, type: 'checkbox' },
-      { label: 'Chat', to: 'https://chat-template.nuxt.dev/' },
-      { label: 'Portfolio', to: 'https://portfolio-template.nuxt.dev/' },
-      { label: 'Changelog', to: 'https://changelog-template.nuxt.dev/' },
-      { label: 'Editor', to: 'https://editor-template.nuxt.dev/' },
-      { label: 'Calendar', to: 'https://calendar-template.nuxt.dev/' }
-    ]
-  }
-
-  const docsItem: DropdownMenuItem = {
-    label: 'Documentation',
-    icon: 'i-lucide-book-open',
-    to: 'https://ui.nuxt.com/docs/getting-started/installation/nuxt',
-    target: '_blank'
-  }
-
-  const githubItem: DropdownMenuItem = {
-    label: 'GitHub repository',
-    icon: 'i-simple-icons-github',
-    to: 'https://github.com/nuxt-ui-templates/dashboard',
-    target: '_blank'
-  }
-
-  const vercelItem: DropdownMenuItem = {
-    label: 'Deploy to Vercel',
-    icon: 'i-simple-icons-vercel',
-    to: 'https://vercel.com/new/clone?repository-name=dashboard&repository-url=https%3A%2F%2Fgithub.com%2Fnuxt-ui-templates%2Fdashboard&demo-image=https%3A%2F%2Fui.nuxt.com%2Fassets%2Ftemplates%2Fnuxt%2Fdashboard-dark.png&demo-url=https%3A%2F%2Fdashboard-template.nuxt.dev%2F&demo-title=Nuxt%20Dashboard%20Template&demo-description=A%20dashboard%20template%20with%20multi-column%20layout%20for%20building%20sophisticated%20admin%20interfaces.',
-    target: '_blank'
-  }
-
   const logoutItem: DropdownMenuItem = {
     label: 'Log out',
     icon: 'i-lucide-log-out',
@@ -147,7 +78,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
   }
 
   return [
-    [userItem, themeItem, appearanceItem, templatesItem, docsItem, githubItem, vercelItem],
+    [userItem, profileItem, appearanceItem],
     [logoutItem]
   ]
 })
@@ -172,6 +103,7 @@ async function handleLogout() {
     <UButton
       v-bind="{
         ...userData,
+        label: collapsed ? undefined : userData.label,
         trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
       }"
       color="neutral"

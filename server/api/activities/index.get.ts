@@ -16,12 +16,35 @@ export default defineEventHandler(async (event) => {
              WHERE a.deleted_at IS NULL`
   const args: any[] = []
 
-  if (auth.role === 'koordinator') {
-    sql += ` AND a.region_id = ?`
-    args.push(auth.regionId)
-  } else if (auth.role === 'anggota') {
+  // Role scoping — kepala: lihat semua (no filter)
+  // anggota: hanya aktivitas sendiri (ignore scope/region/user_id spoofing)
+  // koordinator: wilayah (default) | self | anggota tertentu — semua tetap dibatasi dalam regionId
+  if (auth.role === 'anggota') {
     sql += ` AND a.user_id = ?`
     args.push(auth.userId)
+  } else if (auth.role === 'koordinator') {
+    const scope = String(query.scope || 'wilayah')
+    const anggotaId = query.anggota_id ? Number(query.anggota_id) : undefined
+    const legacyUserId = query.user_id ? Number(Array.isArray(query.user_id) ? query.user_id[0] : query.user_id) : undefined
+    const targetAnggotaId = anggotaId ?? (scope === 'anggota' ? legacyUserId : undefined)
+
+    if (scope === 'self') {
+      sql += ` AND a.user_id = ?`
+      args.push(auth.userId)
+    } else if (scope === 'anggota' && targetAnggotaId) {
+      sql += ` AND a.user_id = ? AND a.region_id = ?`
+      args.push(targetAnggotaId, auth.regionId)
+    } else {
+      // wilayah: seluruh wilayah koordinator; tetap batasi region
+      sql += ` AND a.region_id = ?`
+      args.push(auth.regionId)
+      // optional legacy filter within wilayah
+      if (legacyUserId && scope !== 'anggota') {
+        // allow ?user_id= filter but still scoped to wilayah via region_id above — add extra user filter
+        sql += ` AND a.user_id = ?`
+        args.push(legacyUserId)
+      }
+    }
   }
 
   if (query.tanggal) {
@@ -36,7 +59,8 @@ export default defineEventHandler(async (event) => {
     sql += ` AND a.tanggal <= ?`
     args.push(String(query.tanggal_sampai))
   }
-  if (query.region_id) {
+  // region_id: only kepala may filter by region; koordinator/anggota ignored (already scoped)
+  if (auth.role === 'kepala' && query.region_id) {
     sql += ` AND a.region_id = ?`
     args.push(Number(query.region_id))
   }
@@ -44,7 +68,8 @@ export default defineEventHandler(async (event) => {
     sql += ` AND a.kategori_id = ?`
     args.push(Number(query.kategori_id))
   }
-  if (query.user_id) {
+  // user_id filter: only kepala/admin may use it directly; koordinator/anggota already scoped above
+  if ((auth.role === 'kepala' || auth.role === 'admin') && query.user_id) {
     const ids = Array.isArray(query.user_id)
       ? query.user_id.map(Number)
       : [Number(query.user_id)]
