@@ -6,7 +6,6 @@ export default defineEventHandler(async (event) => {
   const path = rawPath.split('?')[0]
   if (!path.startsWith('/api/')) return
   if (path === '/api/auth/login') return
-  if (path.startsWith('/api/auth/google')) return
   if (path === '/api/panduan' || path.startsWith('/api/panduan')) return
   if (path.startsWith('/api/whatsapp/webhook')) return
 
