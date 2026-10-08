@@ -7,7 +7,8 @@ const OAUTH_STATE_COOKIE = 'google_oauth_state'
 export default defineEventHandler(async (event) => {
   const auth = event.context.auth as any
   if (!auth || auth.role !== 'admin') {
-    throw createError({ statusCode: 403, statusMessage: 'Hanya admin yang dapat menghubungkan Google Drive' })
+    console.warn('[google oauth] ditolak — role:', (auth as any)?.role ?? null, 'userId:', (auth as any)?.userId ?? null)
+    throw createError({ statusCode: 403, statusMessage: `Hanya admin yang dapat menghubungkan Google Drive (terdeteksi: ${String(auth?.role ?? 'tidak login')})` })
   }
 
   const config = useRuntimeConfig()
